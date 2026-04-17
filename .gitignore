@@ -26,6 +26,9 @@ pnpm-debug.log*
 # claude code local settings
 .claude/settings.local.json
 
+# personal reference, not part of the repo
+how_to_add_blog.md
+
 # pagefind
 
 public/pagefind

@@ -1,18 +1,18 @@
 export const SITE = {
   website: "https://karimizayan.com/",
-  author: "Sat Naing",
-  profile: "https://satnaing.dev/",
-  desc: "A minimal, responsive and SEO-friendly Astro blog theme.",
-  title: "AstroPaper",
+  author: "Karimi Zayan",
+  profile: "https://karimizayan.com/",
+  desc: "Personal blog and notes by Karimi Zayan.",
+  title: "Tough blog",
   ogImage: "astropaper-og.jpg",
   lightAndDarkMode: true,
   postPerIndex: 4,
   postPerPage: 4,
   scheduledPostMargin: 15 * 60 * 1000, // 15 minutes
-  showArchives: true,
+  showArchives: false,
   showBackButton: true, // show back button in post detail
   editPost: {
-    enabled: true,
+    enabled: false,
     text: "Edit page",
     url: "https://github.com/wafflesheep/tough_blog/edit/main/",
   },
