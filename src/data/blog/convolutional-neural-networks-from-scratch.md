@@ -14,22 +14,27 @@ tags:
 description: Building a CNN from the ground up — the math, the code, and the intuition.
 ---
 
-
 ## Pre-amble (feel free to skip)
 
-I started writing this article more than 4 years ago in 2022 but this article did not take 4 years to make. It was originally a two part article written for NUS High's Computer Science Interest Group, Appventure. However, due to various reasons such as scaling complexity, school work, dwindling motivation and many additional commitments, I never finished the second part. The original blogpost can be found [here](https://nush.app/blog/2022/05/26/cnn-from-scratch-1/) (Please do not read, it is really bad). Over the last 4 years, I was pestered by my editor Prannaya to finish this but today I finally do it all. This is a full rewrite to make the original more clear and accessible. For the full story, on why it took so long refer to the addendum at the end. The article is intended for students who already understand Linear Algebra 1, Calculus 1 and basic Python.
+I started writing this article more than 4 years ago in 2022 but this article did not take 4 years to make. It was originally a two part article written for NUS High's Computer Science Interest Group, Appventure. However, due to various reasons such as scaling complexity, school work, dwindling motivation and many additional commitments, I never finished the second part.
+
+The original blogpost can be found [here](https://nush.app/blog/2022/05/26/cnn-from-scratch-1/) (Please do not read, it is really bad). Over the last 4 years, I was pestered by my editor Prannaya to finish this but today I finally do it all. This is a full rewrite to make the original more clear and accessible. For the full story, on why it took so long refer to the addendum at the end. The article is intended for students who already understand Linear Algebra 1, Calculus 1 and basic Python.
 
 ## Introduction
 
-AI specifically those powered by neural networks have taken over. I setup this entire website with claude code and I almost write all my code for work with claude code. However despite its widespread use, very few people actually know how neural networks work and the math and logic behind them. Well, people actually do kind of have an idea on how it works but their understanding is opaque, they can explain it in general terms but they aren't able to build it themselves. Today, WE BUILD IT OURSELVES. In this article, we build a Convolutional Neural Network from scratch with Numpy. I mean it is not exactly from scratch but it is "from scratch enough". We will start with a simple example, then we will 
+AI specifically those powered by neural networks have taken over. I setup this entire website with claude code and I almost write all my code for work with claude code. However despite its widespread use, very few people actually know how neural networks work and the math and logic behind them. Well, people actually do kind of have an idea on how it works but their understanding is opaque, they can explain it in general terms but they aren't able to build it themselves. Today, WE BUILD IT OURSELVES.
+
+In this article, we build a Convolutional Neural Network from scratch with Numpy. I mean it is not exactly from scratch but it is "from scratch enough". We will start with a simple example, then we with move on to an example with a simple Feed Forward Neural Network and finally we will have a full working example with a Convolutional Neural Network.
+
+
+
+## Gradient Descent Example (Linear System Solution)
 
 Let's start by importing **Numpy**.
 
 ```python
 >>> import numpy as np
 ```
-
-## Gradient Descent Example (Linear System Solution)
 
 Let's start with a simple Observe the following series of mathematical equations:
 
@@ -78,7 +83,6 @@ f(x,y)&=3xy+x^2\\
 \frac{\partial f(x,y)}{\partial y}&=3x
 \end{aligned}
 $$
-
 
 A thing to understand is that vectors are just a collection of numbers, so an n-sized vector will have n partial derivatives if the function is $f:\mathbb{R}^{n} \rightarrow \mathbb{R}$ (the derivative is known as the gradient). But do we represent these n partial derivatives as a column vector or row vector?
 
@@ -294,7 +298,6 @@ array([[ 1.,  3.,  2., -1.],
        [ 1.,  1., -1., -3.]])
 ```
 
-
 $$
 \mathbf{b}=
 \begin{bmatrix}
@@ -401,9 +404,7 @@ $$c = {(a-y)}^2$$
 
 where $y$ is the true y, $c$ is the cost.
 
-
 In this case, it is quite easy to represent. Let us expand it to a layer with 4 input neurons and 4 output neurons.
-
 
 ![multiple perceptron example](./images/multiple_perceptron_example.png)
 
@@ -441,7 +442,6 @@ $$
 \end{aligned}
 $$
 
-
 However we have once again hit a speedbump. How do we find the derivative of a vector $\mathbf{z}$ with respect to a matrix $W$? The function is of the form $f:\mathbb{R}^{m \times n} \rightarrow \mathbb{R}^{m}$. Hence, the derivative will be a third order tensor also known as a 3D matrix. (colloquially) But for now we will use a trick to dodge the usage of third order tensors because of the nature of the function $W\mathbf{x}$. For this example, I use $m=3$ and $n=2$ but its generalizable for any sizes.
 
 $$
@@ -476,7 +476,6 @@ $$
 $$
 
 We now calculate the individual derivatives of $\mathbf{z}$ wrt to $W$.
-
 
 $$
 \begin{aligned}
@@ -530,7 +529,6 @@ $$
 \mathbf{x}\frac{\partial c}{\partial\mathbf{z}}
 \end{aligned}
 $$
-
 
 Wonderful, we have just found out this amazing method, where we just add $\mathbf{x}$ to the front. Normally this method is not possible but it is just possible in this special case as we dont have to consider terms such as $\frac{\partial c}{\partial{\mathbf{z}}_{2}}\frac{\partial {\mathbf{z}}_{2}}{\partial{w}_{11}}$ because they are just 0. It helps us dodge all the possibilites of tensor calculus (at least for now) and allows the NumPy multiplication to be much easier. $f$ can also generalize for any vector to scalar function, not just the specific steps we make.
 
@@ -588,7 +586,6 @@ $$
 =diag(\sigma^{'}(\mathbf{z}))
 \end{aligned}
 $$
-
 
 As you see, we can reduce this derivative to this specific value. I have used the $diag$ operator which converts a vector to a diagonal matrix. Finally, after all this derivation (mathematically and figuratively) we can use chain rule to join everything together:
 
@@ -650,6 +647,7 @@ data = [[np.array([[0],[0]], dtype=np.float64),np.array([[1]], dtype=np.float64)
         [np.array([[1],[0]], dtype=np.float64),np.array([[0]], dtype=np.float64)],
         [np.array([[1],[1]], dtype=np.float64),np.array([[1]], dtype=np.float64)]]
 ```
+
 We then define a network structure. It doesn't have to be too complex because it is a pretty simple function. I decided on a $2 \rightarrow 3 \rightarrow 1$ multi-layer perceptron (MLP) structure, with the sigmoid activation function.
 
 ![multiple perceptron network](./images/multiple_perceptron_network.png)
@@ -672,36 +670,36 @@ class NNdata:
         self.dw_1 = None
         self.db_0 = None
         self.dw_0 = None
-        
+
     def sigmoid(self, x):
         return 1 / (1 + np.exp(-x))
-    
+
     def sigmoid_derivative(self, x):
         return self.sigmoid(x) * (1 - self.sigmoid(x))
-    
+
     def feed_forward(self, x):
         self.a_0 = x
-        
+
         self.z_1 = np.matmul(self.W_0, self.a_0)+self.b_0
         self.a_1 = self.sigmoid(self.z_1)
-        
+
         self.z_2 = np.matmul(self.W_1, self.a_1)+self.b_1
         self.a_2 = self.sigmoid(self.z_2)
         return self.a_2
-        
+
     def loss(self, y):
         return np.linalg.norm(self.a_2-y)**2
-    
+
     def back_prop(self, y):
         dcdz_2 = 2 * np.matmul((self.a_2-y).T,np.diag(self.sigmoid_derivative(self.z_2).reshape(1)))
         dcdb_1 = dcdz_2
         dcdw_1 = np.matmul(self.a_1, dcdz_2)
-        
+
         dcda_1 = np.matmul(dcdz_2, self.W_1)
         dcdz_1 = np.matmul(dcda_1, np.diag(self.sigmoid_derivative(self.z_1).reshape(3)))
         dcdb_0 = dcdz_1
         dcdw_0 = np.matmul(self.a_0, dcdz_1)
-        
+
         self.db_1 = dcdb_1.T
         self.dw_1 = dcdw_1.T
         self.db_0 = dcdb_0.T
@@ -711,7 +709,6 @@ class NNdata:
 Next I program gradient descent. There are 3 kinds of gradient descent when there are multiple datapoints, Stochastic, Batch and Mini-Batch. In Stochastic Gradient Descent (SGD), the weights are updated after a single sample is run. This will obviously cause your step towards the ideal value be very chaotic. In Batch Gradient Descent, the weights are updated after every sample is run, and the net step is the sum/average of all the $\nabla F(x)$, which is less chaotic, but steps are less frequent.
 
 Of course, in real life, we can never know which algorithm is better without making an assumption about the data. (No Free Lunch Theorem) A good compromise is Mini-Batch Gradient Descent, which is like Batch Gradient Descent but use smaller chunks of all the datapoints every step. In this case, I use Batch Gradient Descent.
-
 
 ```python
 nndata = NNdata()
@@ -739,6 +736,7 @@ for i in range(10000):
 ```
 
 Output resource:
+
 ```
 loss (1000/10000): 0.245
 loss (2000/10000): 0.186
@@ -752,11 +750,9 @@ loss (9000/10000): 0.001
 loss (10000/10000): 0.001
 ```
 
-
 Voila! We have officially programmed Neural Networks from scratch. Pat yourself on the back for reading through this. And of course, if you bothered to code this out, try porting it over to different languages like Java, JS or even C (yikes why would [anyone](https://github.com/terminalai/neuralC) subjects themselves to that?).
 
 In the next part, it is time for the actual hard part. Good luck!
-
 
 ## References
 
