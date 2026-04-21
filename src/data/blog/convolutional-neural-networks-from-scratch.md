@@ -17,24 +17,21 @@ description: Building a CNN from the ground up — the math, the code, and the i
 
 ## Pre-amble (feel free to skip)
 
-I started writing this article more than 4 years ago in 2022 but this article did not take 4 years to make. It was originally a two part article written for NUS High's Computer Science Interest Group, Appventure. However, due to various reasons such as scaling complexity, school work, dwindling motivation and many additional commitments, I never finished the second part. The original blogpost can be found [here](https://nush.app/blog/2022/05/26/cnn-from-scratch-1/) (Please do not read, it is really bad). Over the last 4 years, I was pestered by my editor Prannaya to finish this but today I finally do it all. For the full story, on why it took so long refer to the appendix at the end.
+I started writing this article more than 4 years ago in 2022 but this article did not take 4 years to make. It was originally a two part article written for NUS High's Computer Science Interest Group, Appventure. However, due to various reasons such as scaling complexity, school work, dwindling motivation and many additional commitments, I never finished the second part. The original blogpost can be found [here](https://nush.app/blog/2022/05/26/cnn-from-scratch-1/) (Please do not read, it is really bad). Over the last 4 years, I was pestered by my editor Prannaya to finish this but today I finally do it all. This is a full rewrite to make the original more clear and accessible. For the full story, on why it took so long refer to the addendum at the end. The article is intended for students who already understand Linear Algebra 1, Calculus 1 and basic Python.
 
 ## Introduction
 
-AI specifically those powered by neural networks have taken over. I setup this blogpost entirely with claude code and I get it to check the grammar and spelling for all my articles. Yet, very few people actually know how neural networks work and the math and logic behind them. Well, people actually do kind of have an idea on how it works but their understanding is fairly vague 
+AI specifically those powered by neural networks have taken over. I setup this entire website with claude code and I almost write all my code for work with claude code. However despite its widespread use, very few people actually know how neural networks work and the math and logic behind them. Well, people actually do kind of have an idea on how it works but their understanding is opaque, they can explain it in general terms but they aren't able to build it themselves. Today, WE BUILD IT OURSELVES. In this article, we build a Convolutional Neural Network from scratch with Numpy. I mean it is not exactly from scratch but it is "from scratch enough". We will start with a simple example, then we will 
 
-Let's start by importing our bff for life, **Numpy**.
+Let's start by importing **Numpy**.
 
 ```python
 >>> import numpy as np
 ```
 
-Numpy is introduced in CS4132 (or PC6432 for some reason), but for a quick summary, it is a Linear Algebra library, which means it is VERY useful in this task.
-
-
 ## Gradient Descent Example (Linear System Solution)
 
-Observe the following series of mathematical equations:
+Let's start with a simple Observe the following series of mathematical equations:
 
 $$
 \begin{aligned}
@@ -773,7 +770,7 @@ A lot of people think I just collated a bunch of sources and rephrased, and hone
 - https://en.wikipedia.org/wiki/XNOR_gate
 - CS5131 Notes (Special thanks to Mr Chua and Mr Ng)
 
-## Appendix
+## Addendum
 
 TO BE DONE
 
