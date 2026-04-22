@@ -18,7 +18,7 @@ description: Building a CNN from the ground up — the math, the code, and the i
 
 I started writing this article more than 4 years ago in 2022 but this article did not take 4 years to make. It was originally a two part article written for NUS High's Computer Science Interest Group, Appventure. However, due to various reasons such as scaling complexity, school work, dwindling motivation and many additional commitments, I never finished the second part.
 
-The original blogpost can be found [here](https://nush.app/blog/2022/05/26/cnn-from-scratch-1/) (Please do not read, it is really bad). Over the last 4 years, I was pestered by my editor Prannaya to finish this but today I finally do it all. This is a full rewrite to make the original more clear and accessible. For the full story, on why it took so long refer to the addendum at the end. The article is intended for students who already understand Linear Algebra 1, Calculus 1 and basic Python.
+The original blogpost can be found [here](https://nush.app/blog/2022/05/26/cnn-from-scratch-1/) (Please do not read, it is really bad). Over the last 4 years, I was pestered by my editor Prannaya to finish this but today I finally do it all. This is a full rewrite to make the original more clear and accessible. For the full story, on why it took so long refer to the addendum at the end. 
 
 ## Introduction
 
@@ -26,17 +26,21 @@ AI specifically those powered by neural networks have taken over. I setup this e
 
 In this article, we build a Convolutional Neural Network from scratch with Numpy. I mean it is not exactly from scratch but it is "from scratch enough". We will start with a simple example, then we with move on to an example with a simple Feed Forward Neural Network and finally we will have a full working example with a Convolutional Neural Network.
 
+## Scope
 
+This article lives in a weird gray area. Neural networks are written in a very optimised way and some amount of agreement on how tensors are implemented is needed for it to actually be implemented. However, I dont want to touch tensors, because it becomes harder to visualise and I am not super familiar with tensor analysis and differential geometry (I dont know at all). The moment you find a "derivative" of a matrix with respect to another matrix, it is already a mostly empty order-4 tensor (4d matrix). A convolution layer with multiple input channels and output channels has a derivative which is an even emptier order 6 tensor.
+
+Perhaps one day I will return to this article and  The article is intended for students who already understand Linear Algebra 1, Calculus 1 and basic Python.
 
 ## Gradient Descent Example (Linear System Solution)
 
-Let's start by importing **Numpy**.
+First, lets import **Numpy**.
 
 ```python
 >>> import numpy as np
 ```
 
-Let's start with a simple Observe the following series of mathematical equations:
+Gradient Descent on a full neural network is a pretty difficult taks so let us try Gradient Descent on a simple example. Let's start with this simple two variable simultaneous equation system.
 
 $$
 \begin{aligned}
@@ -45,7 +49,7 @@ $$
 \end{aligned}
 $$
 
-Despite the fact that solving these is pretty easy (as we learnt in Year 1), let's try going with a different solution from what is usually portrayed. Let's try using **gradient descent**.
+We will attempt to solve this with Gradient Descent.
 
 If you remember, Gradient Descent is a method used to solve any sort of equation by taking steps towards the real value by using calculus to predict the direction and size of the step. Essentially if you remember in calculus, the minimum of the graph will have a tangent of slope 0 and hence we can understand the direction of these "steps" to solve the problem. We just need a function where the derivative and function result approach 0 as you get closer to the true solution. This function is known as the objective function.
 
@@ -57,9 +61,11 @@ $$
 
 where $A$ is a known square matrix, $\mathbf{b}$ is a known vector and $\mathbf{x}$ is an unknown vector.
 
-In this case, for the objective function we will use Linear Least Squares (LLS) function as it is an accurate thing to minimize in this case written below. 
+In this case, for the objective function we will use Linear Least Squares (LLS) function as it is an accurate thing to minimize in this case written below.
 
-$$F(\mathbf{x}) = {||A\mathbf{x}-\mathbf{b}||}_{2}^{2}$$
+$$
+F(\mathbf{x}) = {||A\mathbf{x}-\mathbf{b}||}_{2}^{2}
+$$
 
 ### Matrix Calculus
 
@@ -69,13 +75,14 @@ Firstly, let's revise derivatives wth this simple example:
 
 $$
 \begin{aligned}
-y&=sin(x^2)+5\\
-\frac{dy}{dx}&=\frac{d}{dx}\left(sin(x^2)+5\right)\\
-&=2xcos(x^2)
+y&=\sin{\left(x^2\right)}+5\\
+\frac{dy}{dx}&=\frac{d}{dx}\left(\sin{\left(x^2\right)}+5\right)\\
+&=2x\cos{\left(x^2\right)}
 \end{aligned}
 $$
 
 For functions with multiple variables, we can find the partial derivative with respect to each of the variables, as shown below:
+
 $$
 \begin{aligned}
 f(x,y)&=3xy+x^2\\
@@ -86,7 +93,8 @@ $$
 
 A thing to understand is that vectors are just a collection of numbers, so an n-sized vector will have n partial derivatives if the function is $f:\mathbb{R}^{n} \rightarrow \mathbb{R}$ (the derivative is known as the gradient). But do we represent these n partial derivatives as a column vector or row vector?
 
-$$\frac{\partial y}{\partial\mathbf{x}} = 
+$$
+\frac{\partial y}{\partial\mathbf{x}} = 
 \begin{bmatrix}
 \frac{\partial y}{\partial{\mathbf{x}}_{1}}\\
 \frac{\partial y}{\partial{\mathbf{x}}_{2}}\\
@@ -161,7 +169,9 @@ We see that it is kind of the same with single variable, where if we have $f(x)=
 
 Now we look at the lines and "2"s. This is a common function known as the euclidean norm or 2-norm.
 
-$$\|{\mathbf {x}}\|_{2}:={\sqrt {x_{1}^{2}+\cdots +x_{n}^{2}}}$$
+$$
+\|{\mathbf {x}}\|_{2}:={\sqrt {x_{1}^{2}+\cdots +x_{n}^{2}}}
+$$
 
 We then square it giving rise to the second "2". Now we define and do the same thing we did with $Ax-b$, $\|{\mathbf {y}}\|_{2}^{2}$ is $f:\mathbb{R}^{n} \rightarrow \mathbb{R}$. Hence, the derivative is a row vector.
 
