@@ -22,22 +22,22 @@ The original blogpost can be found [here](https://nush.app/blog/2022/05/26/cnn-f
 
 ## Introduction
 
-AI specifically those powered by neural networks have taken over. I setup this entire website with claude code and I almost write all my code for work with claude code. However despite its widespread use, very few people actually know how neural networks work and the math and logic behind them. Well, people actually do kind of have an idea on how it works but their understanding is opaque, they can explain it in general terms but they aren't able to build it themselves. Today, WE BUILD IT OURSELVES.
+AI specifically those powered by neural networks have taken over. I setup this entire website with claude code and I almost write all my code for work with claude code. However despite its widespread use, very few people actually know how neural networks work and the math and logic behind them. Well, people actually do kind of have an idea on how it works but their understanding is opaque, they can explain it in general terms but they aren't able to build it themselves. Today, we build it ourselves.
 
-In this article, we build a Convolutional Neural Network from scratch with Numpy. I mean it is not exactly from scratch but it is "from scratch enough". We will start with a simple example, then we with move on to an example with a simple Feed Forward Neural Network and finally we will have a full working example with a Convolutional Neural Network.
+In this article, we build a Convolutional Neural Network from scratch with Numpy. I mean it is not exactly from scratch but it is "from scratch enough". The goal is to do it without for loops excepts for iteration to keep the code clean. We will start with a simple example, then we with move on to an example with a simple Feed Forward Neural Network and finally we will have a full working example with a Convolutional Neural Network on the MNIST data set
 
 ## Scope
 
-This article lives in a weird gray area. Neural networks are written in a very optimised way and some amount of agreement on how tensors are implemented is needed for it to actually be implemented. However, I dont want to touch tensors, because it becomes harder to visualise and I am not super familiar with tensor analysis and differential geometry (I dont know at all). The moment you find a "derivative" of a matrix with respect to another matrix, it is already a mostly empty order-4 tensor (4d matrix). A convolution layer with multiple input channels and output channels has a derivative which is an even emptier order 6 tensor.
+This article lives in a weird gray area. Neural networks are written in a very optimised way and some amount of agreement on how tensors are implemented is needed for it to actually be implemented well. However, I dont want to touch tensors, because it becomes harder to visualise and I am not super familiar with tensor analysis and differential geometry (I dont know at all). The moment you find a "derivative" of a matrix with respect to another matrix, it is already a mostly empty order-4 tensor (4d matrix). A convolution layer with multiple input channels and output channels has a derivative which is an even emptier order 6 tensor. It is not very useful to think about theis kind of tensors for solving these kinds of problems and most college level courses stick to matrix calculus, which I think is fair. Furthermore, tensors really come in when you have to do forward differentiation as opposed to backward differentiation (backprop) which is what we will be doing. 
 
-Perhaps one day I will return to this article and  The article is intended for students who already understand Linear Algebra 1, Calculus 1 and basic Python.
+Perhaps one day I will write an article to tackle that can of worms. But to keep it scoped well, this article only requires a basic understanding of Linear Algebra 1, Calculus 1 and Python.
 
 ## Gradient Descent Example (Linear System Solution)
 
 First, lets import **Numpy**.
 
 ```python
->>> import numpy as np
+import numpy as np
 ```
 
 Gradient Descent on a full neural network is a pretty difficult taks so let us try Gradient Descent on a simple example. Let's start with this simple two variable simultaneous equation system.
@@ -69,7 +69,7 @@ $$
 
 ### Matrix Calculus
 
-Now, what do the weird lines and two occurences of "2" above mean and how exactly do we calculate the derivative of a scalar in terms of a vector? Well we have to learn matrix calculus, a very peculiar domain of math that is very torturous. Ideally, you want to avoid this at all cost, but I will do a gentle walk through this stuff.
+Now, what do the weird lines and two occurences of "2" above mean and how exactly do we calculate the derivative of a scalar in terms of a vector? Well we have to learn some kind of matrix calculus, where we have to dip slightly in multivariable calculus, but dont worry it should be all above board for the most part. Multivariable differentiation is not so bad.
 
 Firstly, let's revise derivatives wth this simple example:
 
@@ -110,7 +110,7 @@ $$
 \end{bmatrix}
 $$
 
-Well, both actually can work (even if you think of a vector as a column vector), the first version is called the denominator layout and the second one is called the numerator layout. They are both transpositions of each other. For gradient descent the denominator layout is more natural because for standard practice because we think of a vector as a column vector. I also prefer the denominator layout. However, the numerator layout follows the rules of single variable calculus more normally and will be much easier to follow. For example, matrices do not have commutative multiplication so the direction you chain terms matters. We naturally think of chaining terms to the back and this is true for numerator layout but in denominator layout terms are chained to the front. Product rule also is more funny when it comes to denom layout. So moving forward we will stick with the numerator layout and transpose the matrix or vector once the derivative is found. We will also stick to column vectors.
+Well, both actually can work (even if you think of a vector as a column vector), the first version is called the denominator layout and the second one is called the numerator layout. They are both transpositions of each other. For gradient descent the denominator layout is more natural because for standard practice because we think of a vector as a column vector. I think numerator layout is more natural as chaining is done from the back and the product rule looks less funky. The original version of the article used the numerator layout but I think when it comes to thinking of CNN's and multiple layes of derivatives. we should just stick to the denomenator layout.
 
 First lets look at the $A\mathbf{x}-\mathbf{b}$ term and we will see why the derivative is so and so with a simple $2 \times 2$ case. $A\mathbf{x}-\mathbf{b}$ is a $f:\mathbb{R}^{n} \rightarrow \mathbb{R}^{n}$ and hence the derivative will be a matrix (known as the Jacobian to many). Lets first, see the general equation and work it out for every value.
 
@@ -119,6 +119,7 @@ $$
 \mathbf{y} &= A\mathbf{x}-\mathbf{b}\\
 \begin{bmatrix}
 {\mathbf{y}}_{1} \\
+\vdots \\
 {\mathbf{y}}_{2}
 \end{bmatrix}
 &=
