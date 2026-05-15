@@ -81,20 +81,25 @@ $$
 ## Convolution 1 layer
 ### Forward
 $\mathbf{X}$ is size $(n,m)$
-$\mathbf{W}$ is size $(k,k)$
-$\mathbf{A}$ is size $(n-k+1,m-k+1)$
+$\mathbf{W}$ is size $(k_{1},k_{2})$
+$\mathbf{A}$ is size $(n-k_{1}+1,m-k_{2}+1)$
 $$\mathbf{A}=\mathbf{X}*\mathbf{W}$$
-$$a_{i,j}=\sum_{p=1}^{k}\sum_{q=1}^{k}x_{i+p-1,j+q-1}w_{p,q}$$
-
-
+$$a_{i,j}=\sum_{p=1}^{k_{1}}\sum_{q=1}^{k_{2}}x_{i+p-1,j+q-1}w_{p,q}$$
 ### Backward
+$$\frac{\partial a_{i,j}}{\partial w_{p,q}}=x_{i+p-1,j+q-1}$$
+when $k_{1}<d<n-k_{1}$ and $k_{2}<e<n-k_{2}$
+$$\frac{\partial a_{i,j}}{\partial x_{d,e}}=$$
 
-
-
-
-
-
-
+### Conversion
+cost against kernel
+$$
+\begin{align}
+	\frac{\partial c}{\partial w_{p,q}}&=\sum_{i=1}^{n-k_{1}+1}\sum_{j=1}^{m-k_{2}+1} \frac{\partial c}{\partial a_{i,j}} \frac{\partial a_{i,j}}{\partial w_{p,q}} \\
+	&=\sum_{i=1}^{n-k_{1}+1}\sum_{j=1}^{m-k_{2}+1} x_{i+p-1,j+q-1}\frac{\partial c}{\partial a_{i,j}}
+\end{align}
+$$
+$$\frac{\partial c}{\partial \mathbf{W}}=\mathbf{X}* \frac{\partial c}{\partial \mathbf{A}}$$
+cost against prev layer
 
 
 
