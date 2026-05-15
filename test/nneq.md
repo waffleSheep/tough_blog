@@ -88,7 +88,7 @@ $$a_{i,j}=\sum_{p=1}^{k_{1}}\sum_{q=1}^{k_{2}}x_{i+p-1,j+q-1}w_{p,q}$$
 ### Backward
 $$\frac{\partial a_{i,j}}{\partial w_{p,q}}=x_{i+p-1,j+q-1}$$
 when $k_{1}<d<n-k_{1}$ and $k_{2}<e<n-k_{2}$
-$$\frac{\partial a_{i,j}}{\partial x_{d,e}}=\sum_{p=1}^{k_{1}}\sum_{q=1}^{k_{2}}$$
+$$\frac{\partial a_{i,j}}{\partial x_{d,e}}=\sum_{p=1}^{k_{1}}\sum_{q=1}^{k_{2}}w_{k_{1}-p+1,k_{2}-q+1}δd,i+p−1​δe,j+q−1$$
 
 ### Conversion
 cost against kernel
