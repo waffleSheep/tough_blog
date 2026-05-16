@@ -87,8 +87,18 @@ $$\mathbf{A}=\mathbf{X}*\mathbf{W}$$
 $$a_{i,j}=\sum_{p=1}^{k_{1}}\sum_{q=1}^{k_{2}}x_{i+p-1,j+q-1}w_{p,q}$$
 ### Backward
 $$\frac{\partial a_{i,j}}{\partial w_{p,q}}=x_{i+p-1,j+q-1}$$
-when $k_{1}<d<n-k_{1}$ and $k_{2}<e<n-k_{2}$
-$$\frac{\partial a_{i,j}}{\partial x_{d,e}}=\sum_{p=1}^{k_{1}}\sum_{q=1}^{k_{2}}w_{k_{1}-p+1,k_{2}-q+1}δd,i+p−1​δe,j+q−1$$
+
+$$  
+\frac{\partial a_{i,j}}{\partial x_{d,e}}  
+=  
+\begin{cases}  
+w_{d-i+1,\;e-j+1},  
+& \text{if } 1 \le d-i+1 \le k_1 \text{ and } 1 \le e-j+1 \le k_2,\\  
+0,  
+& \text{otherwise.}  
+\end{cases}  
+$$
+$$\frac{\partial a_{i,j}}{\partial x_{d,e}}=\sum_{p=1}^{k_{1}}\sum_{q=1}^{k_{2}}w_{p,q}\delta_{i,d-p+1} \delta_{j,e-q+1}​$$
 
 ### Conversion
 cost against kernel
@@ -100,13 +110,53 @@ $$
 $$
 $$\frac{\partial c}{\partial \mathbf{W}}=\mathbf{X}* \frac{\partial c}{\partial \mathbf{A}}$$
 cost against prev layer
+$$
+\begin{align}
+	\frac{\partial c}{\partial x_{d,e}}&=\sum_{i=1}^{n-k_{1}+1}\sum_{j=1}^{m-k_{2}+1} \frac{\partial c}{\partial a_{i,j}} \frac{\partial a_{i,j}}{\partial x_{d,e}} \\
+	&=\sum_{i=1}^{n-k_{1}+1}\sum_{j=1}^{m-k_{2}+1} \frac{\partial c}{\partial a_{i,j}} \sum_{p=1}^{k_{1}}\sum_{q=1}^{k_{2}}w_{p,q}\delta_{i,d-p+1} \delta_{j,e-q+1} \\
+	&=\sum_{p=1}^{k_{1}}\sum_{q=1}^{k_{2}} w_{p,q}\sum_{i=1}^{n-k_{1}+1}\sum_{j=1}^{m-k_{2}+1}\frac{\partial c}{\partial a_{i,j}} \delta_{i,d-p+1} \delta_{j,e-q+1}​
+\end{align}
+$$
+Set
+$$
+\mathbf{G}=\text{pad}_{k_{1}-1,k_{2}-1}\left(\frac{\partial c}{\partial \mathbf{A}} \right)
+$$
+we see
+$$
+\sum_{i=1}^{n-k_{1}+1}\sum_{j=1}^{m-k_{2}+1}\frac{\partial c}{\partial a_{i,j}} \delta_{i,d-p+1} \delta_{j,e-q+1}=g_{d+k_{1}-p,e+k_{2}-q}
+$$
+Set $r=k_{1}-p+1$ and $s=k_{2}-q+1$
+$$
+\begin{align}
+	\frac{\partial c}{\partial x_{d,e}}
+	&=\sum_{p=1}^{k_{1}}\sum_{q=1}^{k_{2}} w_{p,q}\sum_{i=1}^{n-k_{1}+1}\sum_{j=1}^{m-k_{2}+1}\frac{\partial c}{\partial a_{i,j}} \delta_{i,d-p+1} \delta_{j,e-q+1} \\
+	&=\sum_{p=1}^{k_{1}}\sum_{q=1}^{k_{2}} w_{p,q}g_{d+k_{1}-p,e+k_{2}-q} \\
+	&=\sum_{r=1}^{k_{1}}\sum_{s=1}^{k_{2}} g_{d+r-1,e+s-1}w_{k_{1}-r+1,k_{2}-s+1}​
+\end{align}
+$$
+$$
+\begin{align}
+	\frac{\partial c}{\partial \mathbf{X}}&=\mathbf{G}*\text{flip}\left(\mathbf{W}\right) \\
+	&=\text{pad}_{k_{1}-1,k_{2}-1} \left(\frac{\partial c}{\partial \mathbf{A}} \right)*\text{flip}\left(\mathbf{W}\right)
+\end{align}
+$$
+
+## Convolution multiple layer
+### Forward
+$$
+O_j = \sum_{i=1}^{n}{I_i*K_{ij}}
+$$
+### Backward
+$$
+\begin{align}
+\frac{\partial c}{\partial I_i} &= \text{pad}(\frac{\partial c}{\partial O_j}) * \text{flip}(K_{ij})\\
+\frac{\partial c}{\partial K_{ij}} &= I_i * \frac{\partial c}{\partial O_j}
+\end{align}
+$$
+
+## Relu
+### Forward
 
 
 
-
-
-
-
-
-
-
+### Backward
