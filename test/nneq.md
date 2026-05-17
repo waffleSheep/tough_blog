@@ -156,7 +156,57 @@ $$
 
 ## Relu
 ### Forward
-
-
-
+$$f(x)=\text{max}\left(0,x\right)$$
 ### Backward
+$$  
+\frac{d f}{\partial x}  
+=  
+\begin{cases}  
+1,  
+& \text{if } x > 0,\\  
+0,  
+& \text{otherwise.}  
+\end{cases}  
+$$
+
+## Softmax and CCE Loss
+### Forward
+$$
+\mathbf{\hat{y}}=\text{softmax}\left(\mathbf{x}\right)
+$$
+$$
+\hat{y}_{i}=\frac{e^{x_{i}}}{\sum_{j=1}^{n}{e^{x_{j}}}}
+$$
+$$
+c=\text{CE}\left(\mathbf{y},\mathbf{\hat{y}}\right)
+$$
+$$
+\begin{align}
+	c&=-\sum_{i=1}^{n}{y_{i}\ln\left(\hat{y}_{i}\right)}
+\end{align}
+$$
+### Backward
+$$
+\frac{\partial c}{\partial \hat{y}_{i}}=-\frac{y_{i}}{\hat{y}_{i}}
+$$
+$$  
+\frac{d \hat{y}_{i}}{\partial x_{j}}  
+=  
+\begin{cases}  
+\hat{y}_{i}\left(1-\hat{y}_{i}\right),  
+& \text{if } i=j,\\  
+-\hat{y}_{i}\hat{y}_{j},  
+& \text{otherwise.}  
+\end{cases}  
+$$
+### Conversion
+
+$$
+\begin{align}
+	\frac{\partial c}{\partial x_{i}}&=\sum_{j=1}^{n}{\frac{\partial c}{\partial \hat{y}_{j}}} \frac{\partial\hat{y}_{j}}{\partial x_{i}} \\
+	&=-\sum_{j=1}^{n} \frac{y_{j}}{\hat{y}_{j}} \frac{\partial\hat{y}_{j}}{\partial x_{i}}  \\
+	&=y_{i} \left(\hat{y}_{i}-1\right)+\sum_{j=1,i\neq j}^{n}{y_{j}\hat{y}_{i}} \\
+	&=-y_{i}+\hat{y}_{i}\sum_{j=1}^{n}{\hat{y}_{j}} \\
+	&=\hat{y}_{i}-y_{i}
+\end{align}
+$$

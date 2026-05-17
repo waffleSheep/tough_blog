@@ -28,9 +28,13 @@ In this article, we build a Convolutional Neural Network from scratch with Numpy
 
 ## Scope
 
-This article lives in a weird gray area. Neural networks are written in a very optimised way and some amount of agreement on how tensors are implemented is needed for it to actually be implemented well. However, I dont want to touch tensors, because it becomes harder to visualise and I am not super familiar with tensor analysis and differential geometry (I dont know at all). The moment you find a "derivative" of a matrix with respect to another matrix, it is already a mostly empty order-4 tensor (4d matrix). A convolution layer with multiple input channels and output channels has a derivative which is an even emptier order 6 tensor. It is not very useful to think about theis kind of tensors for solving these kinds of problems and most college level courses stick to matrix calculus, which I think is fair. Furthermore, tensors really come in when you have to do forward differentiation as opposed to backward differentiation (backprop) which is what we will be doing. 
+This article lives in a weird gray area. Neural networks are written in a very optimised way and some amount of agreement on how tensors are implemented is needed for it to actually be implemented well. However, I dont want to touch tensors, because it becomes harder to visualise and I am not super familiar with tensor analysis and differential geometry (I dont know at all). The moment you find a "derivative" of a matrix with respect to another matrix, it is already a mostly empty order-4 tensor (4d matrix). A convolution layer with multiple input channels and output channels has a derivative which is an even emptier order 6 tensor. It is not very useful to think about theis kind of tensors for solving these kinds of problems and most college level courses stick to matrix calculus, which I think is fair. 
 
-Perhaps one day I will write an article to tackle that can of worms. But to keep it scoped well, this article only requires a basic understanding of Linear Algebra 1, Calculus 1 and Python.
+Furthermore, tensors really come in when you have to do forward differentiation as opposed to backward differentiation (backprop) which is what we will be doing. 
+
+As for matrix calculus, a full deep dive into matrix calculus is not really needed for this topic, so I will first compute derivatives with summations and then I will convert them into their vector form. Thus, rules like matrix calculus chain rule and product rule need not be covered.
+
+Perhaps one day I will write an article to tackle the various cans of worms. But to keep it scoped well, this article only requires a basic understanding of Linear Algebra, Calculus and Python.
 
 ## Gradient Descent Example (Linear System Solution)
 
@@ -40,7 +44,7 @@ First, lets import **Numpy**.
 import numpy as np
 ```
 
-Gradient Descent on a full neural network is a pretty difficult taks so let us try Gradient Descent on a simple example. Let's start with this simple two variable simultaneous equation system.
+Gradient Descent on a full neural network is a pretty daunting task so let us try Gradient Descent on a simple example. Let's start with simple simultaneous equation systems like the one below
 
 $$
 \begin{aligned}
@@ -51,7 +55,7 @@ $$
 
 We will attempt to solve this with Gradient Descent.
 
-If you remember, Gradient Descent is a method used to solve any sort of equation by taking steps towards the real value by using calculus to predict the direction and size of the step. Essentially if you remember in calculus, the minimum of the graph will have a tangent of slope 0 and hence we can understand the direction of these "steps" to solve the problem. We just need a function where the derivative and function result approach 0 as you get closer to the true solution. This function is known as the objective function.
+If you remember, Gradient Descent is a method used to solve any sort of equation by taking steps towards the real value by using the derivative to predict the direction and size of the step. If you remember in calculus, the minimum of the graph will have a tangent of slope 0 and hence we can understand the direction of these "steps" to solve the problem. We just need a function where the derivative and function result approach 0 as you get closer to the true solution. This function is known as the objective function.
 
 As you probably know, a linear equation is written as such:
 
@@ -67,9 +71,9 @@ $$
 F(\mathbf{x}) = {||A\mathbf{x}-\mathbf{b}||}_{2}^{2}
 $$
 
-### Matrix Calculus
+### Multivariable Differentiation
 
-Now, what do the weird lines and two occurences of "2" above mean and how exactly do we calculate the derivative of a scalar in terms of a vector? Well we have to learn some kind of matrix calculus, where we have to dip slightly in multivariable calculus, but dont worry it should be all above board for the most part. Multivariable differentiation is not so bad.
+But how exactly do we calculate the derivative of a scalar in terms of a vector? Well we have to learn some kind of multivariable calculus, but don't worry it should be all above board for the most part. Multivariable differentiation is not so bad.
 
 Firstly, let's revise derivatives wth this simple example:
 
@@ -81,7 +85,7 @@ y&=\sin{\left(x^2\right)}+5\\
 \end{aligned}
 $$
 
-For functions with multiple variables, we can find the partial derivative with respect to each of the variables, as shown below:
+For functions with multiple variables, we can find the partial derivative with respect to each of the variables, as shown below.
 
 $$
 \begin{aligned}
@@ -91,7 +95,7 @@ f(x,y)&=3xy+x^2\\
 \end{aligned}
 $$
 
-A thing to understand is that vectors are just a collection of numbers, so an n-sized vector will have n partial derivatives if the function is $f:\mathbb{R}^{n} \rightarrow \mathbb{R}$ (the derivative is known as the gradient). But do we represent these n partial derivatives as a column vector or row vector?
+Basically, variables which you are not computing the derivative with respect to are treated as constants. A thing to understand is that vectors are just a collection of numbers, so an n-sized vector will have n partial derivatives if the function is $f:\mathbb{R}^{n} \rightarrow \mathbb{R}$ (the derivative is known as the gradient). We can represent the derivative like this
 
 $$
 \frac{\partial y}{\partial\mathbf{x}} = 
@@ -103,144 +107,42 @@ $$
 \end{bmatrix}
 $$
 
+With an understanding of the rules above, we can see $g:\mathbb{R} \rightarrow \mathbb{R}^{n}$ and  $f:\mathbb{R}^{n} \rightarrow \mathbb{R}$ with $\mathbf{y}=g(x)$ and $z=\mathbf{f(y)}$ then
 $$
-\frac{\partial y}{\partial\mathbf{x}} = 
-\begin{bmatrix}
-\frac{\partial y}{\partial{\mathbf{x}}_{1}} & \frac{\partial y}{\partial{\mathbf{x}}_{2}} & \cdots & \frac{\partial y}{\partial{\mathbf{x}}_{n}}
-\end{bmatrix}
+\frac{\partial z}{\partial x}=\sum_{i=1}^{n} \frac{\partial z}{\partial y_{i}} \frac{\partial y_{i}}{\partial x}
 $$
 
-Well, both actually can work (even if you think of a vector as a column vector), the first version is called the denominator layout and the second one is called the numerator layout. They are both transpositions of each other. For gradient descent the denominator layout is more natural because for standard practice because we think of a vector as a column vector. I think numerator layout is more natural as chaining is done from the back and the product rule looks less funky. The original version of the article used the numerator layout but I think when it comes to thinking of CNN's and multiple layes of derivatives. we should just stick to the denomenator layout.
+### Simultaneous equation
 
-First lets look at the $A\mathbf{x}-\mathbf{b}$ term and we will see why the derivative is so and so with a simple $2 \times 2$ case. $A\mathbf{x}-\mathbf{b}$ is a $f:\mathbb{R}^{n} \rightarrow \mathbb{R}^{n}$ and hence the derivative will be a matrix (known as the Jacobian to many). Lets first, see the general equation and work it out for every value.
-
+Let us start by breaking our equation down, we break it down in these two equations.
+$$\mathbf{r}= \mathbf{A}\mathbf{x}$$
+$$c={\left\| \mathbf{r} -\mathbf{b} \right\|}^2_2$$
+Then, writing it out with summations, we get this
+$$r_{j}=\sum_{i=1}^{n}{a_{ji}x_{i}}$$
+$$c=\sum_{j=1}^{n}{\left(r_{j}-b_{j}\right)^{2}}$$
+Calculating the partial derivatives, we get these values
 $$
-\begin{aligned}
-\mathbf{y} &= A\mathbf{x}-\mathbf{b}\\
-\begin{bmatrix}
-{\mathbf{y}}_{1} \\
-\vdots \\
-{\mathbf{y}}_{2}
-\end{bmatrix}
-&=
-\begin{bmatrix}
-{a}_{11} & {a}_{12}\\
-{a}_{21} & {a}_{22}\\
-\end{bmatrix}
-\begin{bmatrix}
-{\mathbf{x}}_{1} \\
-{\mathbf{x}}_{2}
-\end{bmatrix}
--
-\begin{bmatrix}
-{\mathbf{b}}_{1} \\
-{\mathbf{b}}_{2}
-\end{bmatrix} \\
-&=
-\begin{bmatrix}
-{a}_{11}{\mathbf{x}}_{1} + {a}_{12}{\mathbf{x}}_{2}-{\mathbf{b}}_{1} \\
-{a}_{21}{\mathbf{x}}_{1} + {a}_{22}{\mathbf{x}}_{2}-{\mathbf{b}}_{1}
-\end{bmatrix}
-\end{aligned}
+\frac{\partial c}{\partial r_{j}}=2\left(r_{j}-b_{j}\right)
 $$
-
-Now we calculate the Jacobian (remember that it is transposed) by calculating the individual derivative for every value.
-
 $$
-\begin{aligned}
-\frac{\partial \mathbf{y}}{\partial \mathbf{x}} &=
-\begin{bmatrix}
-\frac{\partial {\mathbf{y}}_{1}}{\partial{\mathbf{x}}_{1}} & \frac{\partial {\mathbf{y}}_{1}}{\partial{\mathbf{x}}_{2}}\\
-\frac{\partial {\mathbf{y}}_{2}}{\partial{\mathbf{x}}_{1}} & \frac{\partial {\mathbf{y}}_{2}}{\partial{\mathbf{x}}_{2}}\\
-\end{bmatrix} \\
-\frac{\partial {\mathbf{y}}_{1}}{\partial{\mathbf{x}}_{1}} &= {a}_{11}\\
-\frac{\partial {\mathbf{y}}_{1}}{\partial{\mathbf{x}}_{2}} &= {a}_{12}\\
-\frac{\partial {\mathbf{y}}_{2}}{\partial{\mathbf{x}}_{1}} &= {a}_{21}\\
-\frac{\partial {\mathbf{y}}_{2}}{\partial{\mathbf{x}}_{2}} &= {a}_{22}\\
-\frac{\partial \mathbf{y}}{\partial \mathbf{x}} &= 
-\begin{bmatrix}
-{a}_{11} & {a}_{12}\\
-{a}_{21} & {a}_{22}\\
-\end{bmatrix}
-= A
-\end{aligned}
+\frac{\partial r_{j}}{\partial x_{i}}=a_{ji}
 $$
-
-We see that it is kind of the same with single variable, where if we have $f(x)=ax$, then $f'(x)=a$ where a is constant.
-
-Now we look at the lines and "2"s. This is a common function known as the euclidean norm or 2-norm.
-
+Now, it should be easy to see the derivative in terms of summations, but because it will be useful for notation later, we will calculate the derivative first and write in terms of summation and then convert it to the vector form. The vector form also makes computation easier when we are calculating the derivatives with Numpy. The key is to calculate the derivative of $c$ with respect to the vector as opposed to a vector with respect to a vector or a vector with respect to a matrix, as this will save us from messy matrix calculus. For $\frac{\partial c}{\partial r_{j}}=2\left(r_{j}-b_{j}\right)$, we see that
 $$
-\|{\mathbf {x}}\|_{2}:={\sqrt {x_{1}^{2}+\cdots +x_{n}^{2}}}
+\frac{\partial c}{\partial \mathbf{r}}=2(\mathbf{r}-\mathbf{b})
 $$
-
-We then square it giving rise to the second "2". Now we define and do the same thing we did with $Ax-b$, $\|{\mathbf {y}}\|_{2}^{2}$ is $f:\mathbb{R}^{n} \rightarrow \mathbb{R}$. Hence, the derivative is a row vector.
-
+For $\frac{\partial c}{\partial x_{i}}$, we can compute like this
 $$
-\begin{aligned}
-z&=\|{\mathbf {y}}\|_{2}^{2}\\
-&={\mathbf {y}}_{1}^{2} + {\mathbf {y}}_{2}^{2}
-\end{aligned}
+\begin{align}
+	\frac{\partial c}{\partial x_{i}}&=\sum_{j=1}^{n} \frac{\partial c}{\partial r_{j}} \frac{\partial r_{j}}{\partial x_{i}} \\
+	&=\sum_{j=1}^{n} \frac{\partial c}{\partial r_{j}} a_{ji}
+\end{align}
 $$
+From this, I think it is quite clear to see that
+$$\frac{\partial c}{\partial \mathbf{x}}=\mathbf{A}^{T} \frac{\partial c}{\partial \mathbf{r}}$$
+We see that by writing it like this computation can be done very easily as numpy (and every other BLAS library) can support matrix and vector operations clearly.
 
-Now we calculate the Gradient (remember that it is transposed) by calculating the individual derivative for every value.
-
-$$
-\begin{aligned}
-\frac{\partial F(\mathbf{x})}{\partial\mathbf{y}} &=
-\begin{bmatrix}
-\frac{\partial F(\mathbf{x})}{\partial{\mathbf{y}}_{1}} & \frac{\partial F(\mathbf{x})}{\partial{\mathbf{y}}_{2}}
-\end{bmatrix} \\
-\frac{\partial F(\mathbf{x})}{\partial{\mathbf{y}}_{1}} &= 2\mathbf{y}_{1} \\
-\frac{\partial F(\mathbf{x})}{\partial{\mathbf{y}}_{2}} &= 2\mathbf{y}_{2} \\
-\frac{\partial F(\mathbf{x})}{\partial\mathbf{y}} &=
-\begin{bmatrix}
-2\mathbf{y}_{1} & 2\mathbf{y}_{2}
-\end{bmatrix}
-= 2\mathbf{y}^{T}
-\end{aligned}
-$$
-
-To illustrate the chain rule, I will calculate it individually and put it all together.
-
-$$
-\begin{aligned}
-F(\mathbf{x}) &= {||A\mathbf{x}-\mathbf{b}||}_{2}^{2} \\
-&= {({a}_{11}{\mathbf{x}}_{1} + {a}_{12}{\mathbf{x}}_{2}-{\mathbf{b}}_{1})}^{2} +
-{({a}_{21}{\mathbf{x}}_{1} + {a}_{22}{\mathbf{x}}_{2}-{\mathbf{b}}_{1})}^{2} \\
-\end{aligned}
-$$
-
-Now we calculate the Final Gradient by calculating the individual derivative for every value.
-
-$$
-\begin{aligned}
-\frac{\partial F(\mathbf{x})}{\partial\mathbf{x}} &=
-\begin{bmatrix}
-\frac{\partial F(\mathbf{x})}{\partial{\mathbf{x}}_{1}} & \frac{\partial F(\mathbf{x})}{\partial{\mathbf{x}}_{2}}
-\end{bmatrix}\\
-\frac{\partial F(\mathbf{x})}{\partial{\mathbf{x}}_{1}} &= 2{a}_{11}({a}_{11}{\mathbf{x}}_{1} + {a}_{12}{\mathbf{x}}_{2}-{\mathbf{b}}_{1}) + 2{a}_{21}({a}_{21}{\mathbf{x}}_{1} + {a}_{22}{\mathbf{x}}_{2}-{\mathbf{b}}_{1})\\
-\frac{\partial F(\mathbf{x})}{\partial{\mathbf{x}}_{2}} &= 2{a}_{12}({a}_{11}{\mathbf{x}}_{1} + {a}_{12}{\mathbf{x}}_{2}-{\mathbf{b}}_{1}) + 2{a}_{22}({a}_{21}{\mathbf{x}}_{1} + {a}_{22}{\mathbf{x}}_{2}-{\mathbf{b}}_{1})\\
-\frac{\partial F(\mathbf{x})}{\partial\mathbf{x}} &=
-\begin{bmatrix}
-2{a}_{11}({a}_{11}{\mathbf{x}}_{1} + {a}_{12}{\mathbf{x}}_{2}-{\mathbf{b}}_{1}) + 2{a}_{21}({a}_{21}{\mathbf{x}}_{1} + {a}_{22}{\mathbf{x}}_{2}-{\mathbf{b}}_{1}) & 2{a}_{12}({a}_{11}{\mathbf{x}}_{1} + {a}_{12}{\mathbf{x}}_{2}-{\mathbf{b}}_{1}) + 2{a}_{22}({a}_{21}{\mathbf{x}}_{1} + {a}_{22}{\mathbf{x}}_{2}-{\mathbf{b}}_{1})
-\end{bmatrix}\\
-&= 2
-\begin{bmatrix}
-{a}_{11}{\mathbf{x}}_{1} + {a}_{12}{\mathbf{x}}_{2}-{\mathbf{b}}_{1} &
-{a}_{21}{\mathbf{x}}_{1} + {a}_{22}{\mathbf{x}}_{2}-{\mathbf{b}}_{1}
-\end{bmatrix}
-\begin{bmatrix}
-{a}_{11} & {a}_{12} \\
-{a}_{21} & {a}_{22} \\
-\end{bmatrix} = 2{(A\mathbf{x}-\mathbf{b})}^{T}A
-\end{aligned}
-$$
-
-As we can see from that last step, its pretty complex an expression, but you can see how neat matrix notation is as compared to writing all that out and you see how matrix calculus works. With numerator layout, its very similar to single-variable but with a few extra steps.
-
-I then transpose the derivative back into the denominator layout written below. The step function is also written below which we will use for the gradient descent.
-
+Finally, combining everything together, we get the three equations we need to solve any linear system with gradient descent.
 $$
 \begin{aligned}
 F(\mathbf{x}) &= {||A\mathbf{x}-\mathbf{b}||}^{2} \\
@@ -248,9 +150,7 @@ F(\mathbf{x}) &= {||A\mathbf{x}-\mathbf{b}||}^{2} \\
 \mathbf{x}_{n+1} &= \mathbf{x}_{n}-\gamma \nabla F(\mathbf {x} _{n})
 \end{aligned}
 $$
-
 where $\gamma$ is the learning rate, we need a small learning rate as it prevents the function from taking large steps and objective functions tend to overblow the "true" error of a function. 
-
 We can now implement this in code form for a very simple linear system written below:
 
 $$
@@ -285,9 +185,7 @@ z
 -12
 \end{bmatrix}
 $$
-
 ### Code Implementation
-
 #### Variables
 
 $$
@@ -348,26 +246,22 @@ array([[0.09257854],
 ```
 
 #### The Objective Function and its Derivative
-
 $$
 F(\mathbf{x}) = {||A\mathbf{x}-\mathbf{b}||}^{2}
 $$
-
 ```python
 >>> def objective_function(x):
         return np.linalg.norm(np.matmul(A,x) - b) ** 2
 ```
-
 $$
 \nabla F(\mathbf {x} )=2A^{T}(A\mathbf {x} -\mathbf {b})
 $$
-
 ```python
 >>> def objective_function_derivative(x):
         return 2 * np.matmul(A.T, np.matmul(A,x) - b)
 ```
 
-In this case, I implemented an arbritary learning rate and arbritary step count. In traditional non-machine learning gradient descent, the learning rate changes per step and is determined via a heuristic such as the Barzilai–Borwein method, however this is not necessary as gradient descent is very robust. I used an arbritary step count for simplicity but you should ideally use some sort of boolean condition to break the loop such as $F(\mathbf{x})<0.01$.
+In this case, I implemented an arbitrary learning rate and arbitrary step count. In traditional non-machine learning gradient descent, the learning rate changes per step and is determined via a heuristic such as the Barzilai–Borwein method, however this is not necessary as gradient descent is very robust. I used an arbitrary step count for simplicity but you should ideally use some sort of Boolean condition to break the loop such as $F(\mathbf{x})<0.01$.
 
 $$
 \mathbf {x}_{n+1}=\mathbf {x}_{n}-\gamma \nabla F(\mathbf {x} _{n})
