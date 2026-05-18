@@ -25,7 +25,6 @@ The original blogpost can be found [here](https://nush.app/blog/2022/05/26/cnn-f
 AI specifically those powered by neural networks have taken over. I setup this entire website with claude code and I almost write all my code for work with claude code. However despite its widespread use, very few people actually know how neural networks work and the math and logic behind them. Well, people actually do kind of have an idea on how it works but their understanding is opaque, they can explain it in general terms but they aren't able to build it themselves. Today, we build it ourselves.
 
 In this article, we build a Convolutional Neural Network from scratch with Numpy. I mean it is not exactly from scratch but it is "from scratch enough". The goal is to do it without for loops excepts for iteration to keep the code clean. We will start with a simple example, then we with move on to an example with a simple Feed Forward Neural Network and finally we will have a full working example with a Convolutional Neural Network on the MNIST data set
-
 ## Scope
 
 This article lives in a weird gray area. Neural networks are written in a very optimised way and some amount of agreement on how tensors are implemented is needed for it to actually be implemented well. However, I dont want to touch tensors, because it becomes harder to visualise and I am not super familiar with tensor analysis and differential geometry (I dont know at all). The moment you find a "derivative" of a matrix with respect to another matrix, it is already a mostly empty order-4 tensor (4d matrix). A convolution layer with multiple input channels and output channels has a derivative which is an even emptier order 6 tensor. It is not very useful to think about theis kind of tensors for solving these kinds of problems and most college level courses stick to matrix calculus, which I think is fair. 
@@ -45,38 +44,31 @@ import numpy as np
 ```
 
 Gradient Descent on a full neural network is a pretty daunting task so let us try Gradient Descent on a simple example. Let's start with simple simultaneous equation systems like the one below
-
 $$
 \begin{aligned}
 4a+2b&=22\\
 3a+8b&=49
 \end{aligned}
 $$
-
 We will attempt to solve this with Gradient Descent.
 
 If you remember, Gradient Descent is a method used to solve any sort of equation by taking steps towards the real value by using the derivative to predict the direction and size of the step. If you remember in calculus, the minimum of the graph will have a tangent of slope 0 and hence we can understand the direction of these "steps" to solve the problem. We just need a function where the derivative and function result approach 0 as you get closer to the true solution. This function is known as the objective function.
 
 As you probably know, a linear equation is written as such:
-
 $$
 A \mathbf{x}-\mathbf{b}=0
 $$
-
 where $A$ is a known square matrix, $\mathbf{b}$ is a known vector and $\mathbf{x}$ is an unknown vector.
 
 In this case, for the objective function we will use Linear Least Squares (LLS) function as it is an accurate thing to minimize in this case written below.
-
 $$
 F(\mathbf{x}) = {||A\mathbf{x}-\mathbf{b}||}_{2}^{2}
 $$
-
 ### Multivariable Differentiation
 
-But how exactly do we calculate the derivative of a scalar in terms of a vector? Well we have to learn some kind of multivariable calculus, but don't worry it should be all above board for the most part. Multivariable differentiation is not so bad.
+But how exactly do we calculate the derivative of a scalar in terms of a vector? Well we have to learn some kind of multivariable calculus, but don't worry it should be all above board for the most part. Multivarible differentiation is not so bad.
 
-Firstly, let's revise derivatives wth this simple example:
-
+Firstly, let's revise derivatives with this simple example:
 $$
 \begin{aligned}
 y&=\sin{\left(x^2\right)}+5\\
@@ -84,7 +76,6 @@ y&=\sin{\left(x^2\right)}+5\\
 &=2x\cos{\left(x^2\right)}
 \end{aligned}
 $$
-
 For functions with multiple variables, we can find the partial derivative with respect to each of the variables, as shown below.
 
 $$
@@ -117,17 +108,39 @@ $$
 Let us start by breaking our equation down, we break it down in these two equations.
 $$\mathbf{r}= \mathbf{A}\mathbf{x}$$
 $$c={\left\| \mathbf{r} -\mathbf{b} \right\|}^2_2$$
-Then, writing it out with summations, we get this
+This gives a good break down of the real operation and the cost function. We are trying to optimize $\mathbf{x}$ such that $\mathbf{Ax}$ is as close to $\mathbf{b}$ as possible. Writing the full matrix form of what we have, we get this for the matrix equation
+$$
+\begin{bmatrix}
+r_{1} \\
+r_{2} \\
+\vdots\\
+r_{n}
+\end{bmatrix}=
+\begin{bmatrix}
+a_{11} & a_{12} & \dots & a_{1n}\\
+a_{21} & a_{22} & \dots & a_{2n}\\
+\vdots & \vdots & \ddots & \vdots\\
+a_{n1} & a_{n2} & \dots & a_{nn}
+\end{bmatrix}
+\begin{bmatrix}
+x_{1}\\
+x_{2}\\
+\vdots\\
+x_{n}
+\end{bmatrix}
+$$
+Rewriting this in terms of summations, we get these terms here
 $$r_{j}=\sum_{i=1}^{n}{a_{ji}x_{i}}$$
+For the cost equation, we get this
 $$c=\sum_{j=1}^{n}{\left(r_{j}-b_{j}\right)^{2}}$$
-Calculating the partial derivatives, we get these values
+Now, it is easy to calculate the partial derivatives
 $$
 \frac{\partial c}{\partial r_{j}}=2\left(r_{j}-b_{j}\right)
 $$
 $$
 \frac{\partial r_{j}}{\partial x_{i}}=a_{ji}
 $$
-Now, it should be easy to see the derivative in terms of summations, but because it will be useful for notation later, we will calculate the derivative first and write in terms of summation and then convert it to the vector form. The vector form also makes computation easier when we are calculating the derivatives with Numpy. The key is to calculate the derivative of $c$ with respect to the vector as opposed to a vector with respect to a vector or a vector with respect to a matrix, as this will save us from messy matrix calculus. For $\frac{\partial c}{\partial r_{j}}=2\left(r_{j}-b_{j}\right)$, we see that
+It should be easy to see the derivative in terms of summations, but because it will be useful for notation later, we will calculate the derivative first and write in terms of summation and then convert it to the vector form. The vector form also makes computation easier when we are calculating the derivatives with Numpy. The key is to calculate the derivative of $c$ with respect to the vector as opposed to a vector with respect to a vector or a vector with respect to a matrix, as this will save us from messy matrix calculus. For $\frac{\partial c}{\partial r_{j}}=2\left(r_{j}-b_{j}\right)$, we see that
 $$
 \frac{\partial c}{\partial \mathbf{r}}=2(\mathbf{r}-\mathbf{b})
 $$
@@ -289,250 +302,74 @@ array([[  9.],
 ```
 
 Voila, we have solved the equation with gradient descent, and the solution is super close. This shows the power of gradient descent.
-
 ## Deep Neural Network Layer
-
-To understand the math behind a deep neural network layer, we will first look at the single perceptron case.
-
-![single perceptron example](./images/single_perceptron_example.png)
-
+Before we jump to full Convolutional Neural Networks, lets start with a simple deep neural network.
+### Forward step
+The deep neural network case is not so different from our original simple linear system example, we just have to calculate a few for more things. The essence of each neural network is layer is also multiplying the values of  a prior layer with a matrix and getting a new weight.
+![multiple perceptron example|308](./images/multiple_perceptron_example.png)
+The equation for a single inactivated layer is as follows
 $$
-z=xw+b\\
-a=\sigma (z)
+\mathbf{z}=\mathbf{W}\mathbf{a}+\mathbf{b}
 $$
-
-where $w$ is the weight, $b$ is the bias, $x$ is the input, $\sigma$ is the activation function and $a$ is the output.
-
-We assume that this is a single layer network and that the loss function is just applied after, and we will just use the MSE loss.
-
-$$c = {(a-y)}^2$$
-
-where $y$ is the true y, $c$ is the cost.
-
-In this case, it is quite easy to represent. Let us expand it to a layer with 4 input neurons and 4 output neurons.
-
-![multiple perceptron example](./images/multiple_perceptron_example.png)
-
 $$
-\begin{aligned}
-{w}_{11}{x}_{1} + {w}_{21}{x}_{2} + {w}_{31}{x}_{3} + {w}_{41}{x}_{4} + {b}_{1} = &{z}_{1}\\
-{w}_{12}{x}_{1} + {w}_{22}{x}_{2} + {w}_{32}{x}_{3} + {w}_{42}{x}_{4} + {b}_{2} = &{z}_{2}\\
-{w}_{13}{x}_{1} + {w}_{23}{x}_{2} + {w}_{33}{x}_{3} + {w}_{43}{x}_{4} + {b}_{3} = &{z}_{3}\\
-{w}_{14}{x}_{1} + {w}_{24}{x}_{2} + {w}_{34}{x}_{3} + {w}_{44}{x}_{4} + {b}_{4} = &{z}_{4}\\
-{a}_{1}=\sigma(&{z}_{1})\\
-{a}_{2}=\sigma(&{z}_{2})\\
-{a}_{3}=\sigma(&{z}_{3})\\
-{a}_{4}=\sigma(&{z}_{4})\\
-c = \frac{1}{4} \left((a_1-y_1)^2 + (a_2 - y_2)^2 + (a_3 - y_3)^2 + (a_4 - y_4)^2\right)
-\end{aligned}
-$$
-
-As you can see, this is just a linear system much like the one showed in the example and it becomes very simple.
-
-$$
-\begin{aligned}
-\mathbf{z} &= W\mathbf{x} + \mathbf{b}\\
-\mathbf{a} &= \sigma(\mathbf{z}) \\
-c &= \frac{1}{n} ||\mathbf{a} - \mathbf{y}||^2_2
-\end{aligned}
-$$
-
-From our work earlier we know that:
-
-$$
-\begin{aligned}
-\frac{\partial \mathbf{z}}{\partial \mathbf{b}}&=I \\
-\frac{\partial \mathbf{z}}{\partial \mathbf{x}}&= W \\
-\frac{\partial c}{\partial \mathbf{a}} &= \frac{2}{n} \left(\mathbf{a} - \mathbf{y} \right)^\text{T}
-\end{aligned}
-$$
-
-However we have once again hit a speedbump. How do we find the derivative of a vector $\mathbf{z}$ with respect to a matrix $W$? The function is of the form $f:\mathbb{R}^{m \times n} \rightarrow \mathbb{R}^{m}$. Hence, the derivative will be a third order tensor also known as a 3D matrix. (colloquially) But for now we will use a trick to dodge the usage of third order tensors because of the nature of the function $W\mathbf{x}$. For this example, I use $m=3$ and $n=2$ but its generalizable for any sizes.
-
-$$
-\begin{aligned}
-\mathbf{z} = W\mathbf{x} + \mathbf{b}\\
 \begin{bmatrix}
-{\mathbf{z}}_{1} \\
-{\mathbf{z}}_{2} \\
-{\mathbf{z}}_{3}
-\end{bmatrix} &= \begin{bmatrix}
-{w}_{11} & {w}_{12}\\
-{w}_{21} & {w}_{22}\\
-{w}_{31} & {w}_{32}\\
+z_{1} \\
+z_{2} \\
+\vdots\\
+z_{m}
+\end{bmatrix}=
+\begin{bmatrix}
+w_{11} & w_{12} & \dots & w_{1n}\\
+w_{21} & w_{22} & \dots & w_{2n}\\
+\vdots & \vdots & \ddots & \vdots\\
+w_{m1} & w_{m2} & \dots & w_{mn}
 \end{bmatrix}
 \begin{bmatrix}
-{\mathbf{x}}_{1} \\
-{\mathbf{x}}_{2}
+a_{1}\\
+a_{2}\\
+\vdots\\
+a_{n}
 \end{bmatrix}
 +
 \begin{bmatrix}
-{\mathbf{b}}_{1} \\
-{\mathbf{b}}_{2} \\
-{\mathbf{b}}_{3}
-\end{bmatrix} \\
-&=
-\begin{bmatrix}
-{w}_{11}{\mathbf{x}}_{1} + {w}_{12}{\mathbf{x}}_{2} - {\mathbf{b}}_{1}\\
-{w}_{21}{\mathbf{x}}_{1} + {w}_{22}{\mathbf{x}}_{2} - {\mathbf{b}}_{1}\\
-{w}_{31}{\mathbf{x}}_{1} + {w}_{32}{\mathbf{x}}_{2} - {\mathbf{b}}_{1}\\
+b_{1}\\
+b_{2}\\
+\vdots\\
+b_{m}
 \end{bmatrix}
-\end{aligned}
 $$
-
-We now calculate the individual derivatives of $\mathbf{z}$ wrt to $W$.
-
+where $\mathbf{a}$ is the previous layers values, $\mathbf{W}$ is the weight matrix, $\mathbf{b}$ is the bias vector and $\mathbf{z}$ is the inactivated layer. We see that this part is not much different from the example earlier. There is also an element wise non polynomial activation function added afterwards. By and large, the Relu function is used here, but before that people used the sigmoid activation function. Either way, it is an element activation function and it is computed as follows
 $$
-\begin{aligned}
-\frac{\partial \mathbf{z}_{1}}{\partial w_{11}}=\mathbf{x}_{1}\quad
-\frac{\partial \mathbf{z}_{2}}{\partial w_{11}}=0\quad
-\frac{\partial \mathbf{z}_{3}}{\partial w_{11}}=0\\
-\frac{\partial \mathbf{z}_{1}}{\partial w_{12}}=\mathbf{x}_{2}\quad
-\frac{\partial \mathbf{z}_{2}}{\partial w_{12}}=0\quad
-\frac{\partial \mathbf{z}_{3}}{\partial w_{12}}=0\\
-\frac{\partial \mathbf{z}_{1}}{\partial w_{21}}=0\quad
-\frac{\partial \mathbf{z}_{2}}{\partial w_{21}}=\mathbf{x}_{1}\quad
-\frac{\partial \mathbf{z}_{3}}{\partial w_{21}}=0\\
-\frac{\partial \mathbf{z}_{1}}{\partial w_{22}}=0\quad
-\frac{\partial \mathbf{z}_{2}}{\partial w_{22}}=\mathbf{x}_{2}\quad
-\frac{\partial \mathbf{z}_{3}}{\partial w_{22}}=0\\
-\frac{\partial \mathbf{z}_{1}}{\partial w_{31}}=0\quad
-\frac{\partial \mathbf{z}_{2}}{\partial w_{31}}=0\quad
-\frac{\partial \mathbf{z}_{3}}{\partial w_{31}}=\mathbf{x}_{1}\\
-\frac{\partial \mathbf{z}_{1}}{\partial w_{32}}=0\quad
-\frac{\partial \mathbf{z}_{2}}{\partial w_{32}}=0\quad
-\frac{\partial \mathbf{z}_{3}}{\partial w_{32}}=\mathbf{x}_{2}\\
-\end{aligned}
+\mathbf{a'}=\sigma\left(\mathbf{z}\right)
 $$
-
-We see that this is a pretty complex looking tensor but we see that a majority of the values are 0 allowing us to pull of an epic hack by considering the fact that at the end we are essentially trying to get a singular scalar value (the loss) and find the partial derivative of that wrt to $W$. There are some steps involved in getting from $\mathbf{z}$ to $c$ but for simplicity instead of showing everything, we will condense all of this into a function $f:\mathbb{R}^{n} \rightarrow \mathbb{R}$ which is defined as $c=f(\mathbf{z})$. In this case, we know the tensor values and we know the gradient and what the derivative should be. Hence, we now just evaluate it and see if we can see any property:
-
 $$
-\begin{aligned}
-\frac{\partial c}{\partial\mathbf{z}} &= 
 \begin{bmatrix}
-\frac{\partial c}{\partial{\mathbf{z}}_{1}} & \frac{\partial c}{\partial{\mathbf{z}}_{2}} & \frac{\partial c}{\partial{\mathbf{z}}_{2}}
-\end{bmatrix} \\
-\frac{\partial c}{\partial W} = 
+a'_{1} \\
+a'_{2} \\
+\vdots\\
+a'_{m}
+\end{bmatrix}=
 \begin{bmatrix}
-\frac{\partial c}{\partial{w}_{11}} & \frac{\partial c}{\partial{w}_{21}} & \frac{\partial c}{\partial{w}_{31}}\\
-\frac{\partial c}{\partial{w}_{12}} & \frac{\partial c}{\partial{w}_{22}} & \frac{\partial c}{\partial{w}_{32}}
+\sigma \left(a_{1}\right)\\
+\sigma \left(a_{2}\right)\\
+\vdots\\
+\sigma \left(a_{n}\right)
 \end{bmatrix}
-=
-\frac{\partial c}{\partial \mathbf{z}}\frac{\partial \mathbf{z}}{\partial \mathbf{W}}
-&=
-\begin{bmatrix}
-\frac{\partial c}{\partial{\mathbf{z}}_{1}}\frac{\partial {\mathbf{z}}_{1}}{\partial{w}_{11}} & \frac{\partial c}{\partial{\mathbf{z}}_{2}}\frac{\partial {\mathbf{z}}_{2}}{\partial{w}_{21}} & \frac{\partial c}{\partial{\mathbf{z}}_{3}}\frac{\partial {\mathbf{z}}_{3}}{\partial{w}_{31}}\\
-\frac{\partial c}{\partial{\mathbf{z}}_{1}}\frac{\partial {\mathbf{z}}_{1}}{\partial{w}_{12}} & \frac{\partial c}{\partial{\mathbf{z}}_{2}}\frac{\partial {\mathbf{z}}_{2}}{\partial{w}_{22}} & \frac{\partial c}{\partial{\mathbf{z}}_{3}}\frac{\partial {\mathbf{z}}_{3}}{\partial{w}_{32}}
-\end{bmatrix}
-=
-\begin{bmatrix}
-\frac{\partial c}{\partial{\mathbf{z}}_{1}}\mathbf{x}_{1} & \frac{\partial c}{\partial{\mathbf{z}}_{2}}\mathbf{x}_{1} & \frac{\partial c}{\partial{\mathbf{z}}_{3}}\mathbf{x}_{1}\\
-\frac{\partial c}{\partial{\mathbf{z}}_{1}}\mathbf{x}_{2} & \frac{\partial c}{\partial{\mathbf{z}}_{2}}\mathbf{x}_{2} & \frac{\partial c}{\partial{\mathbf{z}}_{3}}\mathbf{x}_{2}
-\end{bmatrix}
-=
-\mathbf{x}\frac{\partial c}{\partial\mathbf{z}}
-\end{aligned}
 $$
-
-Wonderful, we have just found out this amazing method, where we just add $\mathbf{x}$ to the front. Normally this method is not possible but it is just possible in this special case as we dont have to consider terms such as $\frac{\partial c}{\partial{\mathbf{z}}_{2}}\frac{\partial {\mathbf{z}}_{2}}{\partial{w}_{11}}$ because they are just 0. It helps us dodge all the possibilites of tensor calculus (at least for now) and allows the NumPy multiplication to be much easier. $f$ can also generalize for any vector to scalar function, not just the specific steps we make.
-
-The next speedbump is much more easier to grasp than the last one, and that is element-wise operations. In this case, we have the activation function $\sigma:\mathbb{R}^{n} \rightarrow \mathbb{R}^{n}$ or $\sigma:\mathbb{R} \rightarrow \mathbb{R}$, which looks like a sigmoid function, but this is just a placeholder function. It can be any $\mathbb{R}$ to $\mathbb{R}$ activation function, such as $\text{RELU}(x) = \text{max}(x, 0)$, or whatever else has been found in research, such as SMELU and GELU. Once again, we work it out for every single value, as shown below:
-
+This gives us the full neural network layer. We can also use the same mean square error,as the loss function, thus we can now right the full neural network in terms of vectors and matrices
+$$\mathbf{a}^{(0)}=\mathbf{x}$$
+$$\mathbf{z}^{(l)}=\mathbf{W}^{(l)}\mathbf{a}^{(l-1)}+\mathbf{b}^{(l)}$$
+$$\mathbf{a}^{(l)}=\sigma \left(\mathbf{z}^{(l)} \right)$$
+where $l=1,2,3,\dots,L$ for the different layers from the neural network and $\mathbf{x}$ is the input, everything else is layer specific. For the final layer $\mathbf{a}^{(L)}$, we can compare it against the true output $\mathbf{y}$ to get the cost $c$
+$$\mathbf{c}=\frac{1}{n}{\left\| \mathbf{a}^{(L)} -\mathbf{y} \right\|}^2_2$$
+We can now write out all the equations with indices
+$$z^{(l)}_{i}=b^{(l)}_i+\sum_{i=1}^{n}w^{(l)}_{ij}a^{(l-1)}_{j}$$
+$$a^{(l)}_{i}=\sigma \left(z^{(l)}_{i}\right)$$
+$$c=\frac{1}{n}\sum_{i=1}^{n}{\left(a^{(L)}_{i}-y_i\right)^{2}}$$
+This makes it much easier for us to calculate the original derivatives. First we calculate the derivative of the cost with respect to the previous layer, same as earlier this is
 $$
-\begin{aligned}
-\mathbf{a} &= \sigma(\mathbf{z})\\
-\begin{bmatrix}
-{\mathbf{a}}_{1} \\
-{\mathbf{a}}_{2} \\
-{\mathbf{a}}_{3}
-\end{bmatrix}
-&=
-\sigma\left(
-\begin{bmatrix}
-{\mathbf{z}}_{1} \\
-{\mathbf{z}}_{2} \\
-{\mathbf{z}}_{3}
-\end{bmatrix}\right)
-=
-\begin{bmatrix}
-\sigma({\mathbf{z}}_{1}) \\
-\sigma({\mathbf{z}}_{2}) \\
-\sigma({\mathbf{z}}_{3})
-\end{bmatrix}
-\end{aligned}
+\frac{\partial c}{\partial a^{(L)}_{i}}=\frac{2}{n}\left(a^{(L)}_{i}-y_{i}\right)
 $$
-
-Now for the 48th billion time, we calculate the Jacobian by calculating every individual derivative to get the general property of the operation.
-
-$$
-\begin{aligned}
-\frac{\partial \mathbf{a}}{\partial \mathbf{z}} &=
-\begin{bmatrix}
-\frac{\partial {\mathbf{a}}_{1}}{\partial{\mathbf{z}}_{1}} & \frac{\partial {\mathbf{a}}_{1}}{\partial{\mathbf{z}}_{2}}& \frac{\partial {\mathbf{a}}_{1}}{\partial{\mathbf{z}}_{3}}\\
-\frac{\partial {\mathbf{a}}_{2}}{\partial{\mathbf{z}}_{1}} & \frac{\partial {\mathbf{a}}_{2}}{\partial{\mathbf{z}}_{2}} & \frac{\partial {\mathbf{a}}_{2}}{\partial{\mathbf{z}}_{3}}\\
-\frac{\partial {\mathbf{a}}_{3}}{\partial{\mathbf{z}}_{1}} & \frac{\partial {\mathbf{a}}_{3}}{\partial{\mathbf{z}}_{2}} & \frac{\partial {\mathbf{a}}_{3}}{\partial{\mathbf{z}}_{3}}
-\end{bmatrix}\\
-\frac{\partial {\mathbf{a}}_{1}}{\partial{\mathbf{z}}_{1}}=\sigma^{'}(\mathbf{z}_{1})\quad
-\frac{\partial {\mathbf{a}}_{1}}{\partial{\mathbf{z}}_{2}}&=0\quad
-\frac{\partial {\mathbf{a}}_{1}}{\partial{\mathbf{z}}_{3}}=0\\
-\frac{\partial {\mathbf{a}}_{2}}{\partial{\mathbf{z}}_{1}}=0\quad
-\frac{\partial {\mathbf{a}}_{2}}{\partial{\mathbf{z}}_{2}}&=\sigma^{'}(\mathbf{z}_{2})\quad
-\frac{\partial {\mathbf{a}}_{2}}{\partial{\mathbf{z}}_{3}}=0\\
-\frac{\partial {\mathbf{a}}_{3}}{\partial{\mathbf{z}}_{1}}=0\quad
-\frac{\partial {\mathbf{a}}_{3}}{\partial{\mathbf{z}}_{2}}&=0\quad
-\frac{\partial {\mathbf{a}}_{3}}{\partial{\mathbf{z}}_{3}}=\sigma^{'}(\mathbf{z}_{3})\\
-\frac{\partial \mathbf{a}}{\partial \mathbf{z}} &=
-\begin{bmatrix}
-\sigma^{'}(\mathbf{z}_{1}) & 0 & 0\\
-0 & \sigma^{'}(\mathbf{z}_{2}) & 0\\
-0 & 0 & \sigma^{'}(\mathbf{z}_{3})\\
-\end{bmatrix}
-=diag(\sigma^{'}(\mathbf{z}))
-\end{aligned}
-$$
-
-As you see, we can reduce this derivative to this specific value. I have used the $diag$ operator which converts a vector to a diagonal matrix. Finally, after all this derivation (mathematically and figuratively) we can use chain rule to join everything together:
-
-$$
-\begin{aligned}
-\frac{\partial c}{\partial \mathbf{b}}=\frac{\partial c}{\partial \mathbf{a}}\frac{\partial \mathbf{a}}{\partial \mathbf{z}}\frac{\partial \mathbf{z}}{\partial \mathbf{b}}
-&=
-\frac{2}{n}{(\mathbf{a}-\mathbf{y})}^{T}diag(\sigma^{'}(\mathbf{z}))\\
-\frac{\partial c}{\partial \mathbf{x}}=\frac{\partial c}{\partial \mathbf{a}}\frac{\partial \mathbf{a}}{\partial \mathbf{z}}\frac{\partial \mathbf{z}}{\partial \mathbf{x}}
-&=
-\frac{2}{n}{(\mathbf{a}-\mathbf{y})}^{T}diag(\sigma^{'}(\mathbf{z}))W\\
-\frac{\partial c}{\partial W}=\frac{\partial c}{\partial \mathbf{a}}\frac{\partial \mathbf{a}}{\partial \mathbf{z}}\frac{\partial \mathbf{z}}{\partial W}
-&=
-\frac{2}{n}\mathbf{x}{(\mathbf{a}-\mathbf{y})}^{T}diag(\sigma^{'}(\mathbf{z}))
-\end{aligned}
-$$
-
-Now that we got these simple definitions for the single-layer case, we can expand it to the multi-layer case.
-
-$$
-\begin{aligned}
-\mathbf{a}_{0}&=\mathbf{x}\\
-\mathbf{z}_{i}&={W}_{i-1}{\mathbf{a}}_{i-1} + \mathbf{b}_{i-1}\\
-\mathbf{a}_{i}&=\sigma(\mathbf{z}_{i})\\
-i &= 1,2,3,...,L\\
-c&=\frac{1}{n}\|{\mathbf{a}-\mathbf {y}}\|_{2}^{2}
-\end{aligned}
-$$
-
-We can do the calculus for the $i$-th layer now, specifically for bias and weight using the chain rule.
-
-$$
-\begin{aligned}
-\frac{\partial c}{\partial \mathbf{b}_{i-1}}=\frac{\partial c}{\partial \mathbf{a}_{L}}\frac{\partial \mathbf{a}_L}{\partial \mathbf{z}_{L}}\frac{\partial \mathbf{z}_{L}}{\partial \mathbf{a}_{L-1}}\cdots\frac{\partial \mathbf{a}_{i}}{\partial \mathbf{z}_{i}}\frac{\partial \mathbf{z}_{i}}{\partial \mathbf{b}_{i-1}}&=
-\frac{2}{n}{(\mathbf{a}_L-\mathbf{y})}^{T}diag(\sigma^{'}(\mathbf{z}_L))W_{L-1}\cdots diag(\sigma^{'}(\mathbf{z}_i))\\
-\frac{\partial c}{\partial W_{i-1}}=\frac{\partial c}{\partial \mathbf{a}_{L}}\frac{\partial \mathbf{a}_L}{\partial \mathbf{z}_{L}}\frac{\partial \mathbf{z}_{L}}{\partial \mathbf{a}_{L-1}}\cdots\frac{\partial \mathbf{a}_{i}}{\partial \mathbf{z}_{i}}\frac{\partial \mathbf{z}_{i}}{\partial W_{i-1}}&=
-\frac{2}{n}\mathbf{a}_{i-1}{(\mathbf{a}_L-\mathbf{y})}^{T}diag(\sigma^{'}(\mathbf{z}_L))W_{L-1}\cdots diag(\sigma^{'}(\mathbf{z}_i))\\
-i &= 1,2,3,...,L
-\end{aligned}
-$$
-
-Now it is time to actually implement this network (finally).
 
 ## Neural Network Implementation (XNOR Gate)
 
