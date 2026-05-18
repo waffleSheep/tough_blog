@@ -151,7 +151,7 @@ $$
 	&=\sum_{j=1}^{n} \frac{\partial c}{\partial r_{j}} a_{ji}
 \end{align}
 $$
-From this, I think it is quite clear to see that
+From this,  we can represent it in matrices as follows
 $$\frac{\partial c}{\partial \mathbf{x}}=\mathbf{A}^{T} \frac{\partial c}{\partial \mathbf{r}}$$
 We see that by writing it like this computation can be done very easily as numpy (and every other BLAS library) can support matrix and vector operations clearly.
 
@@ -302,9 +302,9 @@ array([[  9.],
 ```
 
 Voila, we have solved the equation with gradient descent, and the solution is super close. This shows the power of gradient descent.
-## Deep Neural Network Layer
+## Deep Neural Network Math
 Before we jump to full Convolutional Neural Networks, lets start with a simple deep neural network.
-### Forward step
+### Forward Step
 The deep neural network case is not so different from our original simple linear system example, we just have to calculate a few for more things. The essence of each neural network is layer is also multiplying the values of  a prior layer with a matrix and getting a new weight.
 ![multiple perceptron example|308](./images/multiple_perceptron_example.png)
 The equation for a single inactivated layer is as follows
@@ -362,24 +362,129 @@ $$\mathbf{z}^{(l)}=\mathbf{W}^{(l)}\mathbf{a}^{(l-1)}+\mathbf{b}^{(l)}$$
 $$\mathbf{a}^{(l)}=\sigma \left(\mathbf{z}^{(l)} \right)$$
 where $l=1,2,3,\dots,L$ for the different layers from the neural network and $\mathbf{x}$ is the input, everything else is layer specific. For the final layer $\mathbf{a}^{(L)}$, we can compare it against the true output $\mathbf{y}$ to get the cost $c$
 $$\mathbf{c}=\frac{1}{n}{\left\| \mathbf{a}^{(L)} -\mathbf{y} \right\|}^2_2$$
-We can now write out all the equations with indices
-$$z^{(l)}_{i}=b^{(l)}_i+\sum_{i=1}^{n}w^{(l)}_{ij}a^{(l-1)}_{j}$$
-$$a^{(l)}_{i}=\sigma \left(z^{(l)}_{i}\right)$$
+### Backward - Last layer
+First, we calculate the derivative of the cost with respect to the previous layer. With indices, it looks like this
 $$c=\frac{1}{n}\sum_{i=1}^{n}{\left(a^{(L)}_{i}-y_i\right)^{2}}$$
-This makes it much easier for us to calculate the original derivatives. First we calculate the derivative of the cost with respect to the previous layer, same as earlier this is
+This is the same as earlier, it is just divided by n, this prevents the gradient being too high when the number of perceptrons in the last layer is high. The derivative is straightforwardly
 $$
 \frac{\partial c}{\partial a^{(L)}_{i}}=\frac{2}{n}\left(a^{(L)}_{i}-y_{i}\right)
 $$
-
+It should be quite easy to see that the vector form of this is
+$$
+\frac{\partial c}{\partial \mathbf{a}^{(L)}}=\frac{2}{n}\left(\mathbf{a}^{(L)}-\mathbf{y}\right)
+$$
+### Backward - Unactivated layer
+For the activation, it is done element-wise, so the index notation, just looks like this
+$$a^{(l)}_{i}=\sigma \left(z^{(l)}_{i}\right)$$
+The derivative is just the straightforward
+$$\frac{\partial a^{(l)}_i}{\partial z^{(l)}_i}=\sigma'\left(z^{(l)}_{i}\right)$$
+Now computing with respect to c, we can calculate with the sum and the pre-existing derivative from the prior layer.
+$$
+\begin{align}
+	\frac{\partial c}{\partial z^{(l)}_i}&=\sum_{j=1}^{n}{\frac{\partial c}{\partial a^{(l)}_{j}}\frac{\partial a^{(l)}_j}{\partial z^{(l)}_i}} \\
+	&=\frac{\partial c}{\partial a^{(l)}_{i}}\frac{\partial a^{(l)}_i}{\partial z^{(l)}_i} \\
+	&=\frac{\partial c}{\partial a^{(l)}_{i}}\sigma'\left(z^{(l)}_{i}\right)
+\end{align}
+$$
+This is similar to the step we did earlier with the standard linear algebra case. To write this out in vector form this is just an element wise multiply, not a traditional linear algebra operation. In Numpy this is the standard $*$ multiply operator, I think in most ML papers, they use the $\odot$ symbol. Thus, it is written like this in vector form.
+$$
+\frac{\partial c}{\partial \mathbf{z}^{(l)}}=\frac{\partial c}{\partial \mathbf{a}^{(l)}}\odot \sigma'\left(\mathbf{z}^{(l)}\right)
+$$
+### Backward - Bias
+Looking at the equation
+$$\mathbf{z}^{(l)}=\mathbf{W}^{(l)}\mathbf{a}^{(l-1)}+\mathbf{b}^{(l)}$$
+We see that bias undergoes no transformation and is not multiplied with anything. Thus,
+$$
+\frac{\partial c}{\partial \mathbf{b}^{(l)}}=\frac{\partial c}{\partial \mathbf{z}^{(l)}}
+$$
+### Backward - Weight
+From the equation earlier the form in indices is
+$$z^{(l)}_{i}=b^{(l)}_i+\sum_{i=1}^{n}w^{(l)}_{ij}a^{(l-1)}_{j}$$
+From this, we can clearly see
+$$\frac{\partial z^{(l)}_{i}}{\partial w^{(l)}_{ij}}=a^{(l-1)}_{j}$$
+Calculating the derivative across another variable, we see that 
+$$
+\begin{align}
+	\frac{\partial c}{\partial w^{(l)}_{ij}}&=\sum_{k=1}^{m}{\frac{\partial c}{\partial z^{(l)}_{k}}\frac{\partial z^{(l)}_k}{\partial w^{(l)}_{ij}}} \\
+	&=\frac{\partial c}{\partial z^{(l)}_{i}}\frac{\partial z^{(l)}_i}{\partial w^{(l)}_{ij}} \\
+	&=\frac{\partial c}{\partial z^{(l)}_{i}}a^{(l-1)}_{j}
+\end{align}
+$$
+In this step, we have to be careful with writing the indices, this is not the same as an element wise operation, the index for $\frac{\partial c}{\partial\mathbf{z}^{(l)}}$ is $i$ and the index for $\mathbf{a}^{(l-1)}$ is $j$. We can actually express this as a product of a vertical and horizontal vector
+$$
+\begin{align}
+    \frac{\partial c}{\partial \mathbf{W}}&=
+	\begin{bmatrix}
+	\frac{\partial c}{\partial w^{(l)}_{11}} & \frac{\partial c}{\partial w^{(l)}_{12}} & \dots & \frac{\partial c}{\partial w^{(l)}_{1n}}\\
+	\frac{\partial c}{\partial w^{(l)}_{21}} & \frac{\partial c}{\partial w^{(l)}_{22}} & \dots & \frac{\partial c}{\partial w^{(l)}_{2n}}\\
+	\vdots & \vdots & \ddots &\vdots\\
+	\frac{\partial c}{\partial w^{(l)}_{m1}} & \frac{\partial c}{\partial w^{(l)}_{m2}} & \dots & \frac{\partial c}{\partial w^{(l)}_{mn}}
+	\end{bmatrix} \\
+	&=\begin{bmatrix}
+	\frac{\partial c}{\partial z^{(l)}_{1}} a^{(l-1)}_{1} & \frac{\partial c}{\partial z^{(l)}_{1}} a^{(l-1)}_{2} & \dots & \frac{\partial c}{\partial z^{(l)}_{1}} a^{(l-1)}_{n}\\
+	\frac{\partial c}{\partial z^{(l)}_{2}} a^{(l-1)}_{1} & \frac{\partial c}{\partial z^{(2)}_{2}} a^{(l-1)}_{2} & \dots & \frac{\partial c}{\partial z^{(l)}_{2}} a^{(l-1)}_{n} \\
+	\vdots & \vdots & \ddots &\vdots\\
+	\frac{\partial c}{\partial z^{(l)}_{m}} a^{(l-1)}_{1} & \frac{\partial c}{\partial z^{(l)}_{m}} a^{(l-1)}_{2} & \dots & \frac{\partial c}{\partial z^{(l)}_{m}} a^{(l-1)}_{n}
+	\end{bmatrix} \\
+	&=\begin{bmatrix}
+		\frac{\partial c}{\partial z^{(l)}_{1}} \\
+		\frac{\partial c}{\partial z^{(l)}_{2}} \\
+		\vdots \\
+		\frac{\partial c}{\partial z^{(l)}_{2}}
+	\end{bmatrix}
+	\begin{bmatrix}
+		a^{(l-1)}_{1} & a^{(l-1)}_{2} & \dots & a^{(l-1)}_{n}
+	\end{bmatrix} \\
+	&=\frac{\partial c}{\partial \mathbf{z}^{(l)}}{\mathbf{a}^{(l-1)}}^T
+\end{align}
+$$
+### Backward - Prior Layer
+Similar to the linear algebra example,
+$$\frac{\partial z^{(l)}_{i}}{\partial a^{(l-1)}_{j}}=w^{(l)}_{ij}$$
+It follows from earlier, that
+$$
+\begin{align}
+	\frac{\partial c}{\partial a^{(l-1)}_i}&=\sum_{j=1}^{n}{\frac{\partial c}{\partial z^{(l)}_{j}}\frac{\partial z^{(l)}_j}{\partial a^{(l-1)}_i}} \\
+	&=\sum_{j=1}^{n}{\frac{\partial c}{\partial z^{(l)}_{j}}w^{(l)}_{{ji}}}
+\end{align}
+$$
+and
+$$
+\frac{\partial c}{\partial \mathbf{a}^{(l-1)}}={\mathbf{W}^{(l)}}^T\frac{\partial c}{\partial \mathbf{z}^{(l)}}
+$$
+### Backward step
+Finally, we have a full picture of what the steps look like
+$$
+\frac{\partial c}{\partial \mathbf{a}^{(L)}}=\frac{2}{n}\left(\mathbf{a}^{(L)}-\mathbf{y}\right)
+$$
+$$
+\frac{\partial c}{\partial \mathbf{z}^{(l)}}=\frac{\partial c}{\partial \mathbf{a}^{(l)}}\odot \sigma'\left(\mathbf{z}^{(l)}\right)
+$$
+$$
+\frac{\partial c}{\partial \mathbf{b}^{(l)}}=\frac{\partial c}{\partial \mathbf{z}^{(l)}}
+$$
+$$
+\frac{\partial c}{\partial \mathbf{a}^{(l-1)}}={\mathbf{W}^{(l)}}^T\frac{\partial c}{\partial \mathbf{z}^{(l)}}
+$$
+$$
+\frac{\partial c}{\partial \mathbf{W}^{(l)}}=\frac{\partial c}{\partial \mathbf{z}^{(l)}}{\mathbf{a}^{(l-1)}}^T
+$$
+Now, we can start to implement the neural network with code
 ## Neural Network Implementation (XNOR Gate)
 
-I couldn't find a good, but rather small dataset because most people really do like large datasets and are infuriated when they are not provided that like ~~entitled brats~~ normal people. So, instead, I decided that we will train our neural network to mimic the XNOR gate.
+To test out a neural network, we are gonna test it out  on a small dataset, 
 
-Oh no! Training? Testing? What is that? In all fairness, I am simply trying to show you that the mathematical functions that dictate neural networks as we have found above, fits perfectly with this task of a neural network, and that these neural networks that everyone hears about can really just mimic any function.
-
-![XNOR input output](./images/XNOR_input_output.png)
+| **Input** |     |  **Output**  |
+| :---: | :-: | :------: |
+|   **A**   |  **B**  | **A XNOR B** |
+|   0   |  0  |    1     |
+|   0   |  1  |    0     |
+|   1   |  0  |    0     |
+|   1   |  1  |    1     |
 
 For those who do not know, the XNOR gates inputs and outputs are written above. It is pretty suitable for this example, because the inputs and outputs are all 0 and 1, hence it is fast to train and there is no bias in the data.
+
+For this example, we aren't going to do train-test split as the objective is to show that a neural network can fit functions.
 
 From here, let's try coding out the (x,y) pairs in NumPy:
 
@@ -392,65 +497,99 @@ data = [[np.array([[0],[0]], dtype=np.float64),np.array([[1]], dtype=np.float64)
 
 We then define a network structure. It doesn't have to be too complex because it is a pretty simple function. I decided on a $2 \rightarrow 3 \rightarrow 1$ multi-layer perceptron (MLP) structure, with the sigmoid activation function.
 
-![multiple perceptron network](./images/multiple_perceptron_network.png)
+![multiple perceptron network|452](./images/multiple_perceptron_network.png)
 
-Next, let's try coding out our mathematical work based off the following class:
+First, we start by defining our variables, for the sake of thinking of column vectors as columns, I will encode them as 2d vectors
 
 ```python
 class NNdata:
     def __init__(self):
         self.a_0 = None
-        self.W_0 = np.random.rand(3,2)
-        self.b_0 = np.random.rand(3,1)
+        self.W_1 = np.random.rand(3, 2)
+        self.b_1 = np.random.rand(3, 1)
         self.z_1 = None
         self.a_1 = None
-        self.W_1 = np.random.rand(1,3)
-        self.b_1 = np.random.rand(1,1)
+        self.W_2 = np.random.rand(1, 3)
+        self.b_2 = np.random.rand(1, 1)
         self.z_2 = None
         self.a_2 = None
+        self.db_2 = None
+        self.dw_2 = None
         self.db_1 = None
         self.dw_1 = None
-        self.db_0 = None
-        self.dw_0 = None
+```
 
-    def sigmoid(self, x):
-        return 1 / (1 + np.exp(-x))
+We then write out our activation function, which is sigmoid. Sigmoid is a fairly simple activation function, it is an increasing function that sends $\mathbb{R}$ to $(0,1)$ . It is defined as $\sigma(x)=\frac{1}{1+e^{-x}}$ and its derivative is defined as $\sigma'(x)=\sigma (x) (1-\sigma (x))$. The loss function we will stick with for now is MSE loss as we defined earlier.
 
-    def sigmoid_derivative(self, x):
-        return self.sigmoid(x) * (1 - self.sigmoid(x))
+```python
+    def sigmoid(self, value):
+        return 1 / (1 + np.exp(-value))
 
-    def feed_forward(self, x):
-        self.a_0 = x
+    def sigmoid_derivative(self, value):
+        sigmoid_value = self.sigmoid(value)
+        return sigmoid_value * (1 - sigmoid_value)
+    
+    def loss(self, target):
+        return np.linalg.norm(self.a_2 - target) ** 2
+```
 
-        self.z_1 = np.matmul(self.W_0, self.a_0)+self.b_0
+For our feed forward, we do a very simple network
+$$
+\mathbf{a}^{(0)}=x
+$$
+$$\mathbf{z}^{(1)}=\mathbf{W}^{(1)}\mathbf{a}^{(0)}+\mathbf{b}^{(1)}$$
+$$\mathbf{a}^{(1)}=\sigma \left(\mathbf{z}^{(1)}\right)$$
+$$\mathbf{z}^{(2)}=\mathbf{W}^{(2)}\mathbf{a}^{(1)}+\mathbf{b}^{(2)}$$
+$$\mathbf{a}^{(2)}=\sigma \left(\mathbf{z}^{(2)}\right)$$
+As you can see it is pretty one to one with the math
+
+```python
+    def feed_forward(self, features):
+        self.a_0 = features
+
+        self.z_1 = np.matmul(self.W_1, self.a_0) + self.b_1
         self.a_1 = self.sigmoid(self.z_1)
 
-        self.z_2 = np.matmul(self.W_1, self.a_1)+self.b_1
+        self.z_2 = np.matmul(self.W_2, self.a_1) + self.b_2
         self.a_2 = self.sigmoid(self.z_2)
         return self.a_2
+```
 
-    def loss(self, y):
-        return np.linalg.norm(self.a_2-y)**2
+The backprop math for layer 2 looks like this
+$$\frac{\partial c}{\partial \mathbf{z}^{(2)}}=2(\mathbf{a}^{(2)}-\mathbf{y})\odot\sigma'\left(\mathbf{z}^{(2)}\right)$$
+$$
+\frac{\partial c}{\partial \mathbf{b}^{(2)}}=\frac{\partial c}{\partial \mathbf{z}^{(2)}}
+$$
+$$\frac{\partial c}{\partial \mathbf{W}^{(2)}} = \frac{\partial c}{\partial \mathbf{z}^{(2)}}{\mathbf{a}^{(1)}}^T$$
+And the backprop math for layer 1 looks like this
+$$\frac{\partial c}{\partial \mathbf{a}^{(1)}} = {\mathbf{W}^{(2)}}^T\frac{\partial c}{\partial \mathbf{z}^{(2)}}$$
+$$\frac{\partial c}{\partial \mathbf{z}^{(1)}}=\frac{\partial c}{\partial \mathbf{a}^{(1)}} \odot\sigma'\left(\mathbf{z}^{1)}\right)$$
+$$
+\frac{\partial c}{\partial \mathbf{b}^{(1)}}=\frac{\partial c}{\partial \mathbf{z}^{(1)}}
+$$
+$$\frac{\partial c}{\partial \mathbf{W}^{(1)}} = \frac{\partial c}{\partial \mathbf{z}^{(1)}}{\mathbf{a}^{(0)}}^T$$
+Once again, it is almost one to one with the code
 
-    def back_prop(self, y):
-        dcdz_2 = 2 * np.matmul((self.a_2-y).T,np.diag(self.sigmoid_derivative(self.z_2).reshape(1)))
-        dcdb_1 = dcdz_2
-        dcdw_1 = np.matmul(self.a_1, dcdz_2)
+```python
+    def back_prop(self, target):
+        dcdz_2 = 2 * self.sigmoid_derivative(self.z_2) * (self.a_2 - target)
+        dcdb_2 = dcdz_2
+        dcdw_2 = np.matmul(dcdz_2, self.a_1.T)
 
-        dcda_1 = np.matmul(dcdz_2, self.W_1)
-        dcdz_1 = np.matmul(dcda_1, np.diag(self.sigmoid_derivative(self.z_1).reshape(3)))
-        dcdb_0 = dcdz_1
-        dcdw_0 = np.matmul(self.a_0, dcdz_1)
+        dcda_1 = np.matmul(self.W_2.T, dcdz_2)
+        dcdz_1 = self.sigmoid_derivative(self.z_1) * dcda_1
+        dcdb_1 = dcdz_1
+        dcdw_1 = np.matmul(dcdz_1, self.a_0.T)
 
-        self.db_1 = dcdb_1.T
-        self.dw_1 = dcdw_1.T
-        self.db_0 = dcdb_0.T
-        self.dw_0 = dcdw_0.T
+        self.db_2 = dcdb_2
+        self.dw_2 = dcdw_2
+        self.db_1 = dcdb_1
+        self.dw_1 = dcdw_1
 ```
 
 Next I program gradient descent. There are 3 kinds of gradient descent when there are multiple datapoints, Stochastic, Batch and Mini-Batch. In Stochastic Gradient Descent (SGD), the weights are updated after a single sample is run. This will obviously cause your step towards the ideal value be very chaotic. In Batch Gradient Descent, the weights are updated after every sample is run, and the net step is the sum/average of all the $\nabla F(x)$, which is less chaotic, but steps are less frequent.
 
-Of course, in real life, we can never know which algorithm is better without making an assumption about the data. (No Free Lunch Theorem) A good compromise is Mini-Batch Gradient Descent, which is like Batch Gradient Descent but use smaller chunks of all the datapoints every step. In this case, I use Batch Gradient Descent.
+Of course, in real life, we can never know which algorithm is better without making an assumption about the data. (No Free Lunch Theorem) A good compromise is Mini-Batch Gradient Descent, which is like Batch Gradient Descent but use smaller chunks of all the datapoints every step. In this case, I use Batch Gradient Descent because it is only like 4 tests
 
 ```python
 nndata = NNdata()
@@ -480,21 +619,429 @@ for i in range(10000):
 Output resource:
 
 ```
-loss (1000/10000): 0.245
-loss (2000/10000): 0.186
-loss (3000/10000): 0.029
-loss (4000/10000): 0.007
-loss (5000/10000): 0.003
+loss (1000/10000): 0.194
+loss (2000/10000): 0.029
+loss (3000/10000): 0.007
+loss (4000/10000): 0.004
+loss (5000/10000): 0.002
 loss (6000/10000): 0.002
-loss (7000/10000): 0.002
+loss (7000/10000): 0.001
 loss (8000/10000): 0.001
 loss (9000/10000): 0.001
 loss (10000/10000): 0.001
 ```
 
-Voila! We have officially programmed Neural Networks from scratch. Pat yourself on the back for reading through this. And of course, if you bothered to code this out, try porting it over to different languages like Java, JS or even C (yikes why would [anyone](https://github.com/terminalai/neuralC) subjects themselves to that?).
+Voila! We have officially programmed Neural Networks from scratch. Pat yourself on the back for reading through this. And of course, if you bothered to code this out, try porting it over to different languages like Java, JS or even C (yikes why would [anyone](https://github.com/terminalai/neuralC) subjects themselves to that?). Now it is time for the real kicker, Convolutional Neural Networks, where the math is trickier and the 
 
-In the next part, it is time for the actual hard part. Good luck!
+## Convolution
+
+```python
+from numpy.fft import fft2, ifft2
+```
+
+
+
+
+
+
+
+### Convolution (Multi Channel)
+
+
+
+```python
+def conv2d(input_array, kernel_weights):
+    input_transformed = fft2(input_array)
+    kernel_transformed = fft2(kernel_weights[:, :, ::-1, ::-1], input_array.shape[1:])
+    output_transformed = np.einsum("ihw,oihw->ohw", input_transformed, kernel_transformed)
+    output_full = np.real(ifft2(output_transformed))
+    crop_start = kernel_weights.shape[2] - 1
+    return output_full[:, crop_start:, crop_start:]
+```
+
+```python
+def conv2d_derivative(input_array, derivative):
+    input_transformed = fft2(input_array)
+    derivative_transformed = fft2(derivative[:, ::-1, ::-1], input_array.shape[1:])
+    output_transformed = np.einsum("ohw,ihw->oihw", derivative_transformed, input_transformed)
+    output_full = np.real(ifft2(output_transformed))
+    derivative_height, derivative_width = derivative.shape[1:]
+    return output_full[:, :, derivative_height - 1 :, derivative_width - 1 :]
+```
+
+```python
+def conv2d_back(derivative, kernel_weights):
+    pad_size = kernel_weights.shape[2] - 1
+    derivative_padded = np.pad(
+        derivative,
+        ((0, 0), (pad_size, pad_size), (pad_size, pad_size)),
+    )
+    derivative_transformed = fft2(derivative_padded)
+    kernel_transformed = fft2(kernel_weights, derivative_padded.shape[1:])
+    output_transformed = np.einsum("ohw,oihw->ihw", derivative_transformed, kernel_transformed)
+    output_full = np.real(ifft2(output_transformed))
+    return output_full[:, pad_size:, pad_size:]
+```
+
+
+## Maxpooling
+
+
+
+### Maxpool Multi channel
+
+```python
+def maxpool2d(input_array, input_channels_count, kernel_size):
+    input_height, input_width = input_array.shape[1:]
+    cropped_height = input_height - (input_height % kernel_size)
+    cropped_width = input_width - (input_width % kernel_size)
+    output_height = input_height // kernel_size
+    output_width = input_width // kernel_size
+    strided_shape = (input_channels_count, output_height, kernel_size, output_width, kernel_size)
+    divided_shape = (input_channels_count, output_height, output_width, kernel_size, kernel_size)
+    flattened_shape = (input_channels_count, output_height, output_width, kernel_size * kernel_size)
+
+    input_cropped = input_array[:, :cropped_height, :cropped_width]
+    input_strided = input_cropped.reshape(strided_shape).swapaxes(2, 3)
+
+    input_flattened = input_strided.reshape(flattened_shape)
+    backpool_flattened = np.zeros(flattened_shape)
+    backpool_mask = np.argmax(input_flattened, axis=-1, keepdims=True)
+    np.put_along_axis(backpool_flattened, backpool_mask, 1, axis=-1)
+    backpool_frame = backpool_flattened.reshape(divided_shape).swapaxes(2, 3).reshape(input_array.shape)
+    return input_strided.max((3, 4)), backpool_frame
+```
+
+```python
+def maxpool2d_back(derivative, backpool_frame, kernel_size):
+    derivative_expanded = np.repeat(derivative, kernel_size, axis=-2)
+    derivative_expanded = np.repeat(derivative_expanded, kernel_size, axis=-1)
+    return derivative_expanded * backpool_frame
+```
+
+## Batched
+
+### Batched Linear Layer
+
+```python
+import numpy as np
+
+
+class NN:
+    def __init__(self, x, y, lr):
+        self.x = x
+        self.y = y
+        self.lr = lr
+        self.n = x.shape[0]
+        self.W_1 = np.random.rand(3, 2)
+        self.b_1 = np.random.rand(3)
+        self.W_2 = np.random.rand(1, 3)
+        self.b_2 = np.random.rand(1)
+        self.a_0 = None
+        self.z_1 = None
+        self.a_1 = None
+        self.z_2 = None
+        self.a_2 = None
+
+    def sigmoid(self, z):
+        return 1 / (1 + np.exp(-z))
+
+    def sigmoid_derivative(self, z):
+        sigmoid_value = self.sigmoid(z)
+        return sigmoid_value * (1 - sigmoid_value)
+
+    def ff(self):
+        self.a_0 = self.x
+        self.z_1 = np.einsum("ij,kj->ki", self.W_1, self.a_0) + self.b_1
+        self.a_1 = self.sigmoid(self.z_1)
+        self.z_2 = np.einsum("ij,kj->ki", self.W_2, self.a_1) + self.b_2
+        self.a_2 = self.sigmoid(self.z_2)
+
+    def loss(self):
+        return 1 / self.n * np.linalg.norm(self.a_2 - self.y) ** 2
+
+    def bp(self):
+        dcdz_2 = 2 * 1 / self.n * self.sigmoid_derivative(self.z_2) * (self.a_2 - self.y)
+        self.db_2 = np.sum(dcdz_2, axis=0)
+        self.dw_2 = np.einsum("ki,kj->ij", dcdz_2, self.a_1)
+        dcda_1 = np.einsum("ij,ki->kj", self.W_2, dcdz_2)
+        dcdz_1 = self.sigmoid_derivative(self.z_1) * dcda_1
+        self.db_1 = np.sum(dcdz_1, axis=0)
+        self.dw_1 = np.einsum("ki,kj->ij", dcdz_1, self.a_0)
+
+    def update(self):
+        self.b_2 -= self.lr * self.db_2
+        self.W_2 -= self.lr * self.dw_2
+        self.b_1 -= self.lr * self.db_1
+        self.W_1 -= self.lr * self.dw_1
+```
+
+
+```python
+x = np.array([[0, 0], [0, 1], [1, 0], [1, 1]])
+y = np.array([[1], [0], [0], [1]])
+learning_rate = 1
+nn = NN(x, y, learning_rate)
+for epoch in range(10000):
+    nn.ff()
+    nn.bp()
+    nn.update()
+    if (epoch + 1) % 1000 == 0:
+        print("loss (%d/10000): %.3f" % (epoch + 1, nn.loss()))
+```
+
+```
+loss (1000/10000): 0.132
+loss (2000/10000): 0.006
+loss (3000/10000): 0.002
+loss (4000/10000): 0.002
+loss (5000/10000): 0.001
+loss (6000/10000): 0.001
+loss (7000/10000): 0.001
+loss (8000/10000): 0.001
+loss (9000/10000): 0.000
+loss (10000/10000): 0.000
+```
+
+### Batched Convolution
+
+```python
+def conv2d_batch(input_array, kernel_weights):
+    input_transformed = fft2(input_array)
+    kernel_transformed = fft2(kernel_weights[:, :, ::-1, ::-1], input_array.shape[2:])
+    output_transformed = np.einsum("nihw,oihw->nohw", input_transformed, kernel_transformed)
+    output_full = np.real(ifft2(output_transformed))
+    kernel_height, kernel_width = kernel_weights.shape[2:]
+    return output_full[:, :, kernel_height - 1 :, kernel_width - 1 :]
+```
+
+```python
+def conv2d_derivative_batch(input_array, derivative):
+    input_transformed = fft2(input_array)
+    derivative_transformed = fft2(derivative[:, :, ::-1, ::-1], input_array.shape[2:])
+    output_transformed = np.einsum("nohw,nihw->oihw", derivative_transformed, input_transformed)
+    output_full = np.real(ifft2(output_transformed))
+    derivative_height, derivative_width = derivative.shape[2:]
+    return output_full[:, :, derivative_height - 1 :, derivative_width - 1 :]
+```
+
+```python
+def conv2d_back_batch(derivative, kernel_weights):
+    pad_size = kernel_weights.shape[2] - 1
+    derivative_padded = np.pad(
+        derivative,
+        ((0, 0), (0, 0), (pad_size, pad_size), (pad_size, pad_size)),
+    )
+    derivative_transformed = fft2(derivative_padded)
+    kernel_transformed = fft2(kernel_weights, derivative_padded.shape[2:])
+    output_transformed = np.einsum("nohw,oihw->nihw", derivative_transformed, kernel_transformed)
+    output_full = np.real(ifft2(output_transformed))
+    return output_full[:, :, pad_size:, pad_size:]
+```
+### Batched Max pooling
+
+```python
+def maxpool2d_batch(input_array, kernel_size):
+    batch_size, channels, input_height, input_width = input_array.shape
+    cropped_height = input_height - (input_height % kernel_size)
+    cropped_width = input_width - (input_width % kernel_size)
+    output_height = cropped_height // kernel_size
+    output_width = cropped_width // kernel_size
+    strided_shape = (batch_size, channels, output_height, kernel_size, output_width, kernel_size)
+    divided_shape = (batch_size, channels, output_height, output_width, kernel_size, kernel_size)
+    flattened_shape = (batch_size, channels, output_height, output_width, kernel_size * kernel_size)
+
+    input_cropped = input_array[:, :, :cropped_height, :cropped_width]
+    input_strided = input_cropped.reshape(strided_shape).swapaxes(3, 4)
+
+    input_flattened = input_strided.reshape(flattened_shape)
+    backpool_flattened = np.zeros(flattened_shape)
+    backpool_mask = np.argmax(input_flattened, axis=-1, keepdims=True)
+    np.put_along_axis(backpool_flattened, backpool_mask, 1, axis=-1)
+    backpool_frame = backpool_flattened.reshape(divided_shape).swapaxes(3, 4).reshape(input_array.shape)
+    return input_strided.max((4, 5)), backpool_frame
+```
+
+
+```python
+def maxpool2d_back_batch(derivative, backpool_frame, kernel_size):
+    derivative_expanded = np.repeat(derivative, kernel_size, axis=-2)
+    derivative_expanded = np.repeat(derivative_expanded, kernel_size, axis=-1)
+    return derivative_expanded * backpool_frame
+```
+## Relu and Categorical Cross Entropy Loss
+
+```python
+def softmax(x):
+    exponentials = np.exp(x - np.max(x, axis=1, keepdims=True))
+    return exponentials / np.sum(exponentials, axis=1, keepdims=True)
+
+
+def cce(y_true, y_pred, eps=1e-12):
+    clipped_predictions = np.clip(y_pred, eps, 1.0 - eps)
+    return -np.sum(y_true * np.log(clipped_predictions))
+```
+
+## MNIST
+
+```python
+class CNN:
+    def __init__(self, lr):
+        self.X = None
+        self.y = None
+        self.lr = lr
+        self.n = None
+        self.kernel_W1 = np.random.randn(8, 1, 3, 3) * np.sqrt(2.0 / 9.0)
+        self.W2 = np.random.randn(64, 1352) * np.sqrt(2.0 / 1352.0)
+        self.b2 = np.zeros(64)
+        self.W3 = np.random.randn(10, 64) * np.sqrt(2.0 / 64.0)
+        self.b3 = np.zeros(10)
+        self.a0 = None
+        self.z1 = None
+        self.relu_mask_conv = None
+        self.c1 = None
+        self.mp1 = None
+        self.bp_frame = None
+        self.a1 = None
+        self.z2 = None
+        self.relu_mask_z2 = None
+        self.a2 = None
+        self.z3 = None
+        self.a3 = None
+        self.dcdw3 = None
+        self.dcdb3 = None
+        self.dcdw2 = None
+        self.dcdb2 = None
+        self.dcdw1 = None
+
+    def conv2d(self, input, kernel_weights):
+        input_transformed = fft2(input)
+        kernel_transformed = fft2(kernel_weights[:, :, ::-1, ::-1], input.shape[2:])
+        output_transformed = np.einsum('nihw,oihw->nohw', input_transformed, kernel_transformed)
+        output_full = np.real(ifft2(output_transformed))
+        return output_full[:, :, kernel_weights.shape[2] - 1:, kernel_weights.shape[3] - 1:]
+
+    def conv2d_derivative(self, input, derivative):
+        input_transformed = fft2(input)
+        derivative_transformed = fft2(derivative[:, :, ::-1, ::-1], input.shape[2:])
+        output_transformed = np.einsum('nohw,nihw->oihw', derivative_transformed, input_transformed)
+        output_full = np.real(ifft2(output_transformed))
+        return output_full[:, :, derivative.shape[2] - 1:, derivative.shape[3] - 1:]
+
+    def maxpool2d(self, input, kernel_size):
+        batch_size, channels, input_height, input_width = input.shape
+        cropped_height, cropped_width = input_height-(input_height%kernel_size), input_width-(input_width%kernel_size)
+        output_height, output_width = cropped_height//kernel_size, cropped_width//kernel_size
+        strided_shape = (batch_size, channels, output_height, kernel_size, output_width, kernel_size)
+        divided_shape = (batch_size, channels, output_height, output_width, kernel_size, kernel_size)
+        flattened_shape = (batch_size, channels, output_height, output_width, kernel_size * kernel_size)
+    
+        input_cropped = input[:, :, :cropped_height, :cropped_width]
+        input_strided = input_cropped.reshape(strided_shape).swapaxes(3, 4)
+    
+        input_flattened = input_strided.reshape(flattened_shape)
+        backpool_flattened = np.zeros(flattened_shape)
+        backpool_mask = np.argmax(input_flattened, axis = -1, keepdims=True)
+        np.put_along_axis(backpool_flattened, backpool_mask, 1, axis = -1)
+        return input_strided.max((4,5)), backpool_flattened.reshape(divided_shape).swapaxes(3,4).reshape(input.shape)
+
+    def maxpool2d_back(self, derivative, backpool_frame, kernel_size):
+        return np.repeat(np.repeat(derivative, kernel_size, axis = -2), kernel_size, axis = -1) * backpool_frame
+
+    def softmax(self, x):
+        e = np.exp(x - np.max(x, axis = 1, keepdims = True))
+        return e / np.sum(e, axis = 1, keepdims = True)
+    
+    def cce(self, y_true, y_pred, eps=1e-12):
+        return -np.sum(y_true * np.log(np.clip(y_pred, eps, 1.0 - eps)))
+
+    def ff(self, X_in, y_in):
+        self.X = X_in
+        self.y = y_in
+        self.n = self.X.shape[0]
+        self.a0 = self.X
+        self.z1 = self.conv2d(self.a0, self.kernel_W1)
+        self.relu_mask_conv = self.z1 > 0
+        self.c1 = self.z1 * self.relu_mask_conv
+        self.mp1, self.bp_frame = self.maxpool2d(self.c1, 2)
+        self.a1 = self.mp1.reshape(self.mp1.shape[0], self.mp1.shape[1] * self.mp1.shape[2] * self.mp1.shape[3])
+        self.z2 = np.einsum('ij,kj->ki', self.W2,self.a1)+self.b2
+        self.relu_mask_z2 = self.z2 > 0
+        self.a2 = self.z2 * self.relu_mask_z2
+        self.z3 = np.einsum('ij,kj->ki', self.W3,self.a2)+self.b3
+        self.a3 = self.softmax(self.z3)
+        loss = 1/self.n * self.cce(self.y, self.a3)
+        return loss
+
+    def bp(self):
+        dcdz3 = 1/self.n * (self.a3 - self.y)
+        self.dcdb3 = np.sum(dcdz3, axis = 0)
+        self.dcdw3 = np.einsum('ki,kj->ij', dcdz3, self.a2)
+        dcda2 = np.einsum('ij,ki->kj', self.W3, dcdz3)
+        dcdz2 = dcda2 * self.relu_mask_z2
+        self.dcdb2 = np.sum(dcdz2, axis = 0)
+        self.dcdw2 = np.einsum('ki,kj->ij', dcdz2, self.a1)
+        dcda1 = np.einsum('ij,ki->kj', self.W2, dcdz2)
+        dcdmp1 = dcda1.reshape(self.mp1.shape)
+        dcdc1 = self.maxpool2d_back(dcdmp1, self.bp_frame, 2)
+        dcdz1 = dcdc1 * self.relu_mask_conv
+        self.dcdw1 = self.conv2d_derivative(self.X, dcdz1)
+
+    def update(self):
+        self.b3 -= self.lr * self.dcdb3
+        self.W3 -= self.lr * self.dcdw3
+        self.b2 -= self.lr * self.dcdb2
+        self.W2 -= self.lr * self.dcdw2
+        self.kernel_W1 -= self.lr * self.dcdw1
+```
+
+```python
+from tensorflow.keras.datasets import mnist
+
+# Loads data directly into NumPy arrays
+(x_train, y_train), (x_test, y_test) = mnist.load_data()
+
+# Normalizing pixel values (0-255) to 0-1 range
+x_train, x_test = x_train / 255.0, x_test / 255.0
+```
+
+```python
+x_train = x_train.reshape(1000, 60, 1, 28, 28)
+y_train = np.eye(10)[y_train]
+y_train = y_train.reshape(1000,60,10)
+x_test = x_test.reshape(10000, 1, 28, 28)
+y_test = np.eye(10)[y_test]
+```
+
+```
+((1000, 60, 1, 28, 28), (1000, 60, 10), (10000, 1, 28, 28), (10000, 10))
+```
+
+```python
+learning_rate = 0.1
+nn = CNN(learning_rate)
+start = time.time()
+for i in range(10):
+    for j in range(1000):
+        loss = nn.ff(x_train[j], y_train[j])
+        nn.bp()
+        nn.update()
+    testing_accuracy = (1 - nn.ff(x_test, y_test))*100
+    print("Epoch (%d/10): Training Loss -> %.5f, Testing Acuracy -> %.2f (%.3f secs)" % (i+1, loss, testing_accuracy, time.time()-start))
+```
+
+```
+Epoch (1/10): Training Loss -> 0.04724, Testing Acuracy -> 87.51 (29.273 secs)
+Epoch (2/10): Training Loss -> 0.02798, Testing Acuracy -> 90.84 (61.095 secs)
+Epoch (3/10): Training Loss -> 0.02010, Testing Acuracy -> 92.60 (93.389 secs)
+Epoch (4/10): Training Loss -> 0.01232, Testing Acuracy -> 93.53 (125.905 secs)
+Epoch (5/10): Training Loss -> 0.01044, Testing Acuracy -> 94.03 (161.319 secs)
+Epoch (6/10): Training Loss -> 0.00811, Testing Acuracy -> 94.29 (196.161 secs)
+Epoch (7/10): Training Loss -> 0.00774, Testing Acuracy -> 94.48 (232.237 secs)
+Epoch (8/10): Training Loss -> 0.00903, Testing Acuracy -> 94.42 (270.494 secs)
+Epoch (9/10): Training Loss -> 0.00733, Testing Acuracy -> 94.42 (306.247 secs)
+Epoch (10/10): Training Loss -> 0.00661, Testing Acuracy -> 94.46 (343.732 secs)
+```
 
 ## References
 
