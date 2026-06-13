@@ -631,9 +631,17 @@ loss (9000/10000): 0.001
 loss (10000/10000): 0.001
 ```
 
-Voila! We have officially programmed Neural Networks from scratch. Pat yourself on the back for reading through this. And of course, if you bothered to code this out, try porting it over to different languages like Java, JS or even C (yikes why would [anyone](https://github.com/terminalai/neuralC) subjects themselves to that?). Now it is time for the real kicker, Convolutional Neural Networks, where the math is trickier and the 
-
+Voila! We have officially programmed Neural Networks from scratch. Pat yourself on the back for reading through this. And of course, if you bothered to code this out, try porting it over to different languages like Java, JS or even C (yikes why would [anyone](https://github.com/terminalai/neuralC) subjects themselves to that?). Now it is time for the real kicker, Convolutional Neural Networks, where the math and code is a bit more trickier
 ## Convolution
+Mathematical convolution is defined as 
+$$
+(f*g)(t):=\int _{-\infty }^{\infty }f(\tau )g(t-\tau )\,d\tau
+$$
+While, this may look complicated and it is, we do not really have to grasp this equation in particular to understand convolution as we are working with in the discrete case. In the discrete case for two 1D lists, convolution look something like this
+$$
+(f*g)[n]=\sum f[k]g[n-k]
+$$
+You may understand it as a form of sliding window multiplication. Then, from there build 
 
 ```python
 from numpy.fft import fft2, ifft2
