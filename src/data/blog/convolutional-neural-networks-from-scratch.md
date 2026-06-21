@@ -26,15 +26,21 @@ AI specifically those powered by neural networks have taken over. I setup this e
 
 In this article, we build a Convolutional Neural Network from scratch with Numpy. I mean it is not exactly from scratch but it is "from scratch enough". The goal is to do it without for loops excepts for iteration to keep the code clean. We will start with a simple example, then we with move on to an example with a simple Feed Forward Neural Network and finally we will have a full working example with a Convolutional Neural Network on the MNIST data set
 ## Scope
-
-This article lives in a weird gray area. Neural networks are written in a very optimised way and some amount of agreement on how tensors are implemented is needed for it to actually be implemented well. However, I dont want to touch tensors, because it becomes harder to visualise and I am not super familiar with tensor analysis and differential geometry (I dont know at all). The moment you find a "derivative" of a matrix with respect to another matrix, it is already a mostly empty order-4 tensor (4d matrix). A convolution layer with multiple input channels and output channels has a derivative which is an even emptier order 6 tensor. It is not very useful to think about theis kind of tensors for solving these kinds of problems and most college level courses stick to matrix calculus, which I think is fair. 
+### Autodiff
+This article lives in a weird gray area. Neural networks are written in a very optimised way and some amount of agreement on how tensors are implemented is needed for it to actually be implemented well. However, I dont want to touch tensors, because it becomes harder to visualise and I am not super familiar with tensor analysis and differential geometry (I dont know at all). The moment you find a "derivative" of a matrix with respect to another matrix, it is already a mostly empty order-4 tensor (4d matrix). A convolution layer with multiple input channels and output channels has a derivative which is an even emptier order 6 tensor. It is not very useful to think about these kind of tensors for solving these kinds of problems and most college level courses stick to matrix calculus, which I think is fair. 
 
 Furthermore, tensors really come in when you have to do forward differentiation as opposed to backward differentiation (backprop) which is what we will be doing. 
 
 As for matrix calculus, a full deep dive into matrix calculus is not really needed for this topic, so I will first compute derivatives with summations and then I will convert them into their vector form. Thus, rules like matrix calculus chain rule and product rule need not be covered.
 
 Perhaps one day I will write an article to tackle the various cans of worms. But to keep it scoped well, this article only requires a basic understanding of Linear Algebra, Calculus and Python.
+### Universal Approximation Theorem and understanding
+Why neural networks are designed in this way, or why we use convolution, or why we do this to fit functions are not in the scope of this article. Better people have talked about that topic in a better way than me in many other places. While, I did promise to go through the math, this article is focused on the calculus and not the analysis. Thus, I will not be going through UAT or the math on why things converge. As much as I would love to talk about signal processing and convolution, the scope of this article would be too large if I were to delve into those.
 
+**What I will be going through is going from the vague understanding of what CNNs are to a real implementation of a Convolutional Neural Network on a real dataset from scratch.** Thus, all the math is covered and a full understanding of how to implement it will be gained. As mentioned earlier, I am using Numpy to keep the code clean so it is not exactly as "scratch" as possible. But by following this blogpost, you should be able to port this to any language without using any external libraries (apart from FFT or matrix multiplication or einstein summation but you can implement those as for-loops or functions fairly easily).
+
+### AI writing disclaimer
+Despite being about AI, the article is 99.9% human written. All math is hand typed in latex and all the code is hand-typed in python. The website and server is setup by AI. I also used AI to format the code a bit and fix my grammar and spelling. The code and latex, probably looks worse stylistically than anything an agent could write.
 ## Gradient Descent Example (Linear System Solution)
 
 First, lets import **Numpy**.
@@ -633,6 +639,7 @@ loss (10000/10000): 0.001
 
 Voila! We have officially programmed Neural Networks from scratch. Pat yourself on the back for reading through this. And of course, if you bothered to code this out, try porting it over to different languages like Java, JS or even C (yikes why would [anyone](https://github.com/terminalai/neuralC) subjects themselves to that?). Now it is time for the real kicker, Convolutional Neural Networks, where the math and code is a bit more trickier
 ## Convolution
+### 1D Convolution
 Mathematical convolution is defined as 
 $$
 (f*g)(t):=\int _{-\infty }^{\infty }f(\tau )g(t-\tau )\,d\tau
@@ -641,7 +648,39 @@ While, this may look complicated and it is, we do not really have to grasp this 
 $$
 (f*g)[n]=\sum f[k]g[n-k]
 $$
-You may understand it as a form of sliding window multiplication. Then, from there build 
+You may understand it as a form of sliding window multiplication. For example, if you have a list like $\left[1,2,3,4,5\right]$ and you want to convolve it with a kernel like this $[6,7,8]$. You first take the kernel and flip it to get $\left[8,7,6\right]$. Then, you multiply the first 3 in the list with the 3 values in the kernel pointwise and sum it up, kind of like a dot product so $1*8+2*7+3*6=40$. Then, you shift the kernel "forward" and multiply it by the 2nd to 4th value. So you get $2*8+3*7+4*6=61$. Do this more times (for this example, one more time) until the end of the kernel matches the end of the list. Then, the output of this operation would be $[40,61,82]$.
+### Caveats
+#### Flipping the kernel
+In normal Fourier analysis, the kernel is flipped or applied in reverse as you see in the equations above. It was defined like this for reasons that will become obvious later in the article. However, when first learning about convolution in machine learning people often don't flip the kernel. Flipped or not, it doesn't make much difference as the kernel is what is trained in a convolutional neural net. For the math in the next section and for the rest of the article, I will just treat the kernel as unflipped unless it is relevant to the part.
+#### Padding and stride
+For the sake of this article, we just treat convolution as having no padding and a stride of 1. Padding refers to if you want to add 0's to the ends of your list such that the input list matches the length of the output list. So, for the example above, we would be convolving $\left[0,0,1,2,3,4,5,0,0\right]$ with $\left[6,7,8\right]$ to produce the output $\left[6,19,40,61,82,59,40\right]$. Stride refers to how much you shift the kernel by. For the example above, we were shifting the kernel by 1 each time. if,  we were to have a stride of two, the output of the above example would be 
+### 2D convolution
+
+In two dimensions, it is the same as one dimension just shifted up and down accordingly so
+
+$$
+\begin{bmatrix}
+1 & 2 & 3\\
+4 & 5 & 6\\
+7 & 8  & 9
+\end{bmatrix}*
+\begin{bmatrix}
+1 & 1\\
+0 & 0\\
+\end{bmatrix}
+=
+\begin{bmatrix}
+3 & 5\\
+9 & 11\\
+\end{bmatrix}
+$$
+
+
+
+Convolution was used before neural networks as a sig
+
+
+
 
 ```python
 from numpy.fft import fft2, ifft2
