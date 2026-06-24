@@ -653,9 +653,8 @@ You may understand it as a form of sliding window multiplication. For example, i
 #### Flipping the kernel
 In normal Fourier analysis, the kernel is flipped or applied in reverse as you see in the equations above. It was defined like this for reasons that will become obvious later in the article. However, when first learning about convolution in machine learning people often don't flip the kernel. Flipped or not, it doesn't make much difference as the kernel is what is trained in a convolutional neural net. For the math in the next section and for the rest of the article, I will just treat the kernel as unflipped unless it is relevant to the part.
 #### Padding and stride
-For the sake of this article, we just treat convolution as having no padding and a stride of 1. Padding refers to if you want to add 0's to the ends of your list such that the input list matches the length of the output list. So, for the example above, we would be convolving $\left[0,0,1,2,3,4,5,0,0\right]$ with $\left[6,7,8\right]$ to produce the output $\left[6,19,40,61,82,59,40\right]$. Stride refers to how much you shift the kernel by. For the example above, we were shifting the kernel by 1 each time. if,  we were to have a stride of two, the output of the above example would be 
+For the sake of this article, we just treat convolution as having no padding and a stride of 1. Padding refers to if you want to add 0's to the ends of your list such that the input list matches the length of the output list. So, for the example above, we would be convolving $\left[0,0,1,2,3,4,5,0,0\right]$ with $\left[6,7,8\right]$ to produce the output $\left[6,19,40,61,82,59,40\right]$. Stride refers to how much you shift the kernel by. For the example above, we were shifting the kernel by 1 each time. if,  we were to have a stride of two, the output of the above example would be $
 ### 2D convolution
-
 In two dimensions, it is the same as one dimension just shifted up and down accordingly so
 
 $$
@@ -675,9 +674,13 @@ $$
 \end{bmatrix}
 $$
 
-
-
-Convolution was used before neural networks as a sig
+Convolution was used before neural networks as a signal processing technique. The equation in terms of summation looks like this for an $n\times m$ matrix $\mathbf{X}$ and a $k_{1}\times k_{2}$ kernel $\mathbf{W}$. The equation for $\mathbf{A}=\mathbf{X}*\mathbf{W}$, the summation equation looks like this 
+$$a_{i,j}=\sum_{p=1}^{k_{1}}\sum_{q=1}^{k_{2}}x_{i+p-1,j+q-1}w_{p,q}$$
+Why exactly Convolution is used for image processing is, a key thing to understand though is that the computation for 2D convolution, is fairly expensive. For an $N\times N$ matrix with a $k\times k$ sized kernel, the time complexity would be something like $O(N^{2}k^{2})$. There, is also an expected amount of $C_{in}$ input and $C_{out}$ output channels, for which there is one kernel for each. Thus, the time complexity with an input and output channels is $O(C_{in}C_{out}N^{2}k^{2})$. Luckily, there is a speedup that we can do to make things faster with Fast Fourier Transform (FFT).
+### Convolution - Fourier Transform duality
+The Fourier Transform and Convolution have a special relationship that make the computation of convolution much faster. The relationship being that multiplication in the spectral domain is the same as convolution the spatial domain which is to say that 
+$$\mathcal{F}\left(f*g \right)=\mathcal{F}\left( f \right) \mathcal{F}\left( g \right) $$
+In the discrete case, point-wise multiplication of a
 
 
 
