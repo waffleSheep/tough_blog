@@ -13,7 +13,6 @@ tags:
   - calculus
 description: Building a CNN from the ground up — the math, the code, and the intuition.
 ---
-
 ## Pre-amble (feel free to skip)
 
 I started writing this article more than 4 years ago in 2022 but this article did not take 4 years to make. It was originally a two part article written for NUS High's Computer Science Interest Group, Appventure. However, due to various reasons such as scaling complexity, school work, dwindling motivation and many additional commitments, I never finished the second part.
@@ -22,9 +21,9 @@ The original blogpost can be found [here](https://nush.app/blog/2022/05/26/cnn-f
 
 ## Introduction
 
-AI specifically those powered by neural networks have taken over. I setup this entire website with claude code and I almost write all my code for work with claude code. However despite its widespread use, very few people actually know how neural networks work and the math and logic behind them. Well, people actually do kind of have an idea on how it works but their understanding is opaque, they can explain it in general terms but they aren't able to build it themselves. Today, we build it ourselves.
+AI specifically those powered by neural networks have taken over. I setup this entire website with claude code and I almost write all my code for work with claude code. However despite its widespread use, very few people actually know how neural networks work and the math and logic behind them. Well, people actually do kind of have an idea on how it works but their understanding is opaque and it is hard to find resources online to really build it yourself. It took me many years and many sources to piece together this. I write this to fill that gap and really build it ourselves.
 
-In this article, we build a Convolutional Neural Network from scratch with Numpy. I mean it is not exactly from scratch but it is "from scratch enough". The goal is to do it without for loops excepts for iteration to keep the code clean. We will start with a simple example, then we with move on to an example with a simple Feed Forward Neural Network and finally we will have a full working example with a Convolutional Neural Network on the MNIST data set
+In this article, we build a Convolutional Neural Network from scratch with Numpy. I mean it is not exactly from scratch but it is "from scratch enough". The goal is to do it without for loops excepts for iteration to keep the code clean. We will start with a simple example, then we with move on to an example with a simple Feed Forward Neural Network and finally we will have a full working example with a Convolutional Neural Network on the MNIST data set.
 ## Scope
 ### Autodiff
 This article lives in a weird gray area. Neural networks are written in a very optimised way and some amount of agreement on how tensors are implemented is needed for it to actually be implemented well. However, I dont want to touch tensors, because it becomes harder to visualise and I am not super familiar with tensor analysis and differential geometry (I dont know at all). The moment you find a "derivative" of a matrix with respect to another matrix, it is already a mostly empty order-4 tensor (4d matrix). A convolution layer with multiple input channels and output channels has a derivative which is an even emptier order 6 tensor. It is not very useful to think about these kind of tensors for solving these kinds of problems and most college level courses stick to matrix calculus, which I think is fair. 
@@ -653,7 +652,7 @@ You may understand it as a form of sliding window multiplication. For example, i
 #### Flipping the kernel
 In normal Fourier analysis, the kernel is flipped or applied in reverse as you see in the equations above. It was defined like this for reasons that will become obvious later in the article. However, when first learning about convolution in machine learning people often don't flip the kernel. Flipped or not, it doesn't make much difference as the kernel is what is trained in a convolutional neural net. For the math in the next section and for the rest of the article, I will just treat the kernel as unflipped unless it is relevant to the part.
 #### Padding and stride
-For the sake of this article, we just treat convolution as having no padding and a stride of 1. Padding refers to if you want to add 0's to the ends of your list such that the input list matches the length of the output list. So, for the example above, we would be convolving $\left[0,0,1,2,3,4,5,0,0\right]$ with $\left[6,7,8\right]$ to produce the output $\left[6,19,40,61,82,59,40\right]$. Stride refers to how much you shift the kernel by. For the example above, we were shifting the kernel by 1 each time. if,  we were to have a stride of two, the output of the above example would be $
+For this article, we just treat convolution as having no padding and a stride of 1. Padding refers to if you want to add 0's to the ends of your list such that the input list matches the length of the output list. So, for the example above, we would be convolving $\left[0,0,1,2,3,4,5,0,0\right]$ with $\left[6,7,8\right]$ to produce the output $\left[6,19,40,61,82,59,40\right]$. Stride refers to how much you shift the kernel by. For the example above, we were shifting the kernel by 1 each time. if,  we were to have a stride of two, the output of the above example would be $[40,82]$. Adapting the code to account for stride and padding should not be too difficult.
 ### 2D convolution
 In two dimensions, it is the same as one dimension just shifted up and down accordingly so
 
@@ -674,13 +673,42 @@ $$
 \end{bmatrix}
 $$
 
-Convolution was used before neural networks as a signal processing technique. The equation in terms of summation looks like this for an $n\times m$ matrix $\mathbf{X}$ and a $k_{1}\times k_{2}$ kernel $\mathbf{W}$. The equation for $\mathbf{A}=\mathbf{X}*\mathbf{W}$, the summation equation looks like this 
+Convolution was used before neural networks as a signal processing technique. The equation in terms of summation looks like this for an $n\times m$ matrix $\mathbf{X}$ and a $k_{1}\times k_{2}$ kernel $\mathbf{W}$. For the equation $\mathbf{A}=\mathbf{X}*\mathbf{W}$, the summation equation looks like this 
 $$a_{i,j}=\sum_{p=1}^{k_{1}}\sum_{q=1}^{k_{2}}x_{i+p-1,j+q-1}w_{p,q}$$
 Why exactly Convolution is used for image processing is, a key thing to understand though is that the computation for 2D convolution, is fairly expensive. For an $N\times N$ matrix with a $k\times k$ sized kernel, the time complexity would be something like $O(N^{2}k^{2})$. There, is also an expected amount of $C_{in}$ input and $C_{out}$ output channels, for which there is one kernel for each. Thus, the time complexity with an input and output channels is $O(C_{in}C_{out}N^{2}k^{2})$. Luckily, there is a speedup that we can do to make things faster with Fast Fourier Transform (FFT).
 ### Convolution - Fourier Transform duality
+#### The Fourier Transform
+The Fourier Transform is probably the most important transformation of all time. Fourier Transform is defined as 
+$$
+\widehat{f}\left(\xi  \right)=\int_{-\infty}^{\infty}f(x)e^{-i 2\pi \xi x} dx
+$$
+The Fourier transforms takes functions and describes them as their frequencies. From looking at the equation, you can kind of see why that is. $e^{-i 2 \pi \xi x}$ is a wave, and whenever $f(x)$ is a wave, that matches the frequency at a given frequency $\xi$, the waves cancel out and the integral becomes $\int_{-\infty}^{\infty}1dx$ which leads to their being an infinite pulse. Thus, a function like $\sin{(x)}$ is flat everywhere except two points, where it pulses infinitely. For, functions, that are not waves that are made up of a band of frequencies, the resulting Fourier Transform wont look as clean. This is a rather crude and a somewhat not exact explanation but its importance is far-reaching and out of scope for this article. The Fourier transform has an inverse as well that converts a transformed function back to the original function. It is defined as
+$$
+f\left(x  \right)=\int_{-\infty}^{\infty}\widehat{f}(\xi)e^{i 2\pi \xi x} d\xi
+$$
+#### Discrete Fourier Transform and Fast Fourier Transform
+Much like convolution, the Fourier Transform has a discrete variation defined as follows
+$$X_{k}=\sum _{n=0}^{N-1}x_{n}\cdot e^{-i2\pi {\tfrac {k}{N}}n}$$
+With the inverse defined as
+$$
+x_{n}={\frac {1}{N}}\sum _{k=0}^{N-1}X_{k}\cdot e^{i2\pi {\tfrac {k}{N}}n}
+$$
+Implementing, such an equation naively would be $O(N^2)$. However, a faster implementation of this exists, known as Fast Fourier Transform (FFT) which can compute this in $O(N\log {N})$. I assume most reading  this (and most people) as well have probably heard about FFT.  But many don't know about the relationship between FFT and Convolution.
+#### Convolution-Fourier Transform duality
 The Fourier Transform and Convolution have a special relationship that make the computation of convolution much faster. The relationship being that multiplication in the spectral domain is the same as convolution the spatial domain which is to say that 
-$$\mathcal{F}\left(f*g \right)=\mathcal{F}\left( f \right) \mathcal{F}\left( g \right) $$
-In the discrete case, point-wise multiplication of a
+$$\widehat{f*g}=\skew{2.9}\widehat{f\vphantom{h}} \space\skew{1.2}\widehat{g\vphantom{h}}$$
+Seeing this is not so hard, setting $z=x+y$
+$$
+\begin{align}
+\skew{2.9}\widehat{f\vphantom{h}} (\xi) \space\skew{1.2}\widehat{g\vphantom{h}} (\xi)&=\int_{-\infty}^{\infty}f(x)e^{-i 2\pi \xi x} dx\int_{-\infty}^{\infty}g(y)e^{-i 2\pi \xi y} dy  \\
+&=\int_{-\infty}^{\infty}\int_{-\infty}^{\infty} f(x)g(y)e^{-i 2\pi \xi (x+y)}dxdy \\
+&=\int_{-\infty}^{\infty}\int_{-\infty}^{\infty} f(x)g(z-x) dx \space e^{-i 2\pi \xi z}dz \\
+&= \int_{-\infty}^{\infty} (f*g)(z) \space e^{-i 2\pi \xi z}dz \\
+&= (\widehat{f*g}) (\xi)
+\end{align}
+$$
+
+In the discrete case, point-wise multiplication of two lists that have undergone fourier transform, 
 
 
 
