@@ -709,8 +709,14 @@ $$
 $$
 In the discrete case, point-wise multiplication of two lists that have undergone Fourier transform is convolution of the two lists.
 #### 2D Discrete Fourier Transform
-
-
+For 2D, the Discrete Fourier Transform is defined as
+$$
+\widehat{x}_{lm}=\sum_{j=0}^{N-1}\sum_{k=0}^{M-1}x_{jk}e^{-2\pi i \left( \frac{jl}{N} + \frac{km}{M} \right) }
+$$
+The inverse is defined as
+$$
+x_{jk}=\sum_{j=0}^{N-1}\sum_{k=0}^{M-1} \widehat{x}_{lm}e^{2\pi i \left( \frac{jl}{N} + \frac{km}{M} \right) }
+$$
 
 
 
