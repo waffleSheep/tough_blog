@@ -707,8 +707,10 @@ $$
 &= (\widehat{f*g}) (\xi)
 \end{align}
 $$
+In the discrete case, point-wise multiplication of two lists that have undergone Fourier transform is convolution of the two lists.
+#### 2D Discrete Fourier Transform
 
-In the discrete case, point-wise multiplication of two lists that have undergone fourier transform, 
+
 
 
 
