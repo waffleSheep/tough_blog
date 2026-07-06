@@ -717,7 +717,7 @@ The inverse is defined as
 $$
 x_{jk}=\frac{1}{NM} \sum_{j=1}^{N}\sum_{k=1}^{M} \widehat{x}_{lm}e^{2\pi i \left( \frac{(j-1)l}{N} + \frac{(k-1)m}{M} \right) }
 $$
-Using similar logic as earlier, we can see that 2D convolution is also related to Fourier transform. We will take the convolution of a $N$ by $M$ matrix $\mathbf{X}$ and a $k_{1}$ by $k_{2}$ matrix $\mathbf{W}$ with $k_{1}\leq N$ and $k_{2}\leq M$. Define $\mathbf{Y}$ as $N$ by $M$ matrix. Where the submatrix $\mathbf{Y}_{i\leq k_{1},j \leq k_{2}}$ is the "flipped" version of $\mathbf{W}$ and the rest of the values are zeros. In this case, flip is not a transpose but rather a reverse in both dimensions, equivalent to like `matrix[::-1,::-1]` in Numpy or sending $i,j\rightarrow k_{1}-i+1,k_{2}-j+1$. Thus, the dimension of the matrix dont change or swap like a transpose. Using this, taking the pointwise multiplication of the Fourier Transform of $\mathbf{X}$ and $\mathbf{Y}$, we get
+Using similar logic as earlier, we can see that 2D convolution is also related to Fourier transform. We will take the convolution of a $N$ by $M$ matrix $\mathbf{X}$ and a $k_{1}$ by $k_{2}$ kernel matrix $\mathbf{W}$ with $k_{1}\leq N$ and $k_{2}\leq M$. Define $\mathbf{Y}$ as $N$ by $M$ matrix. Where the submatrix $\mathbf{Y}_{i\leq k_{1},j \leq k_{2}}$ is the "flipped" version of $\mathbf{W}$ and the rest of the values are zeros. In this case, flip is not a transpose but rather a reverse in both dimensions, equivalent to like `matrix[::-1,::-1]` in Numpy or sending $i,j\rightarrow k_{1}-i+1,k_{2}-j+1$. Thus, the dimension of the matrix doesnt change or swap like a transpose. Using this, taking the pointwise multiplication of the Fourier Transform of $\mathbf{X}$ and $\mathbf{Y}$, we get
 $$
 \begin{align}
 \widehat{x}_{l,m}\skew{1.2}\widehat{y}_{l,m}&=\sum_{j=1}^{N}\sum_{k=1}^{M}x_{j,k}e^{-2\pi i \left( \frac{(j-1)l}{N} + \frac{(k-1)m}{M} \right) }\sum_{p=1}^{N}\sum_{q=1}^{M}y_{p,q}e^{-2\pi i \left( \frac{(p-1)l}{N} + \frac{(q-1)m}{M} \right) } \\
@@ -733,13 +733,23 @@ $$
 This may look strange because of some of the negative indexing in the middle, but that is actually circular indexing, so if it is 0, it is actually the last value and so on. I will not elaborate further, this was very annoying (and some would say unnecessary) to type.
 
 This speed up allows us to speed convolution up from $O(C_{in}C_{out}N^{2}k^{2})$ to $O(C_{in}C_{out}N^{2}\log {N})$. Which is great, I guess!
-
 ### Convolution (Single Channel)
+For Convolution and Max Pooling, the actual implementation of each step is not as straight forward as with the normal feed-forward Neural Networks. So, I will go through a mix of math and code. However, the code for a single layer of Convolution is not so bad. We will be using Numpy's FFT Library as it is pretty good.
+
+```python
+from numpy.fft import fft2, ifft2
+```
 
 
 
 ```python
-from numpy.fft import fft2, ifft2
+def conv2d(input_array, kernel):
+    input_transformed = fft2(input_array)
+    kernel_transformed = fft2(kernel[::-1, ::-1], input_array.shape)
+    output_transformed = input_transformed * kernel_transformed
+    output_full = np.real(ifft2(output_transformed))
+    crop_start = kernel.shape[0] - 1
+    return output_full[crop_start:, crop_start:]
 ```
 
 ### Convolution (Multi Channel)
