@@ -23,7 +23,7 @@ The original blogpost can be found [here](https://nush.app/blog/2022/05/26/cnn-f
 
 AI specifically those powered by neural networks have taken over. I setup this entire website with claude code and I almost write all my code for work with claude code. However despite its widespread use, very few people actually know how neural networks work and the math and logic behind them. Well, people actually do kind of have an idea on how it works but their understanding is opaque and it is hard to find resources online to really build it yourself. It took me many years and many sources to piece together this. I write this to fill that gap and really build it ourselves.
 
-In this article, we build a Convolutional Neural Network from scratch with Numpy. I mean it is not exactly from scratch but it is "from scratch enough". The goal is to do it without for loops excepts for iteration to keep the code clean. We will start with a simple example, then we with move on to an example with a simple Feed Forward Neural Network and finally we will have a full working example with a Convolutional Neural Network on the MNIST data set.
+In this article, we build a Convolutional Neural Network from scratch with Numpy. I mean it is not exactly from scratch but it is "from scratch enough". The goal is to do it without for loops except for epoch iteration to keep the code clean. We will start with a simple example, then we with move on to an example with a simple Feed Forward Neural Network and finally we will have a full working example with a Convolutional Neural Network on the MNIST data set.
 ## Scope
 ### Autodiff
 This article lives in a weird gray area. Neural networks are written in a very optimised way and some amount of agreement on how tensors are implemented is needed for it to actually be implemented well. However, I dont want to touch tensors, because it becomes harder to visualise and I am not super familiar with tensor analysis and differential geometry (I dont know at all). The moment you find a "derivative" of a matrix with respect to another matrix, it is already a mostly empty order-4 tensor (4d matrix). A convolution layer with multiple input channels and output channels has a derivative which is an even emptier order 6 tensor. It is not very useful to think about these kind of tensors for solving these kinds of problems and most college level courses stick to matrix calculus, which I think is fair. 
@@ -717,8 +717,13 @@ The inverse is defined as
 $$
 x_{jk}=\sum_{j=0}^{N-1}\sum_{k=0}^{M-1} \widehat{x}_{lm}e^{2\pi i \left( \frac{jl}{N} + \frac{km}{M} \right) }
 $$
+Using similar logic as earlier, we can see that 2D convolution is also related to Fourier transform.
+$$
+\widehat{x}_{lm}=\sum_{j=0}^{N-1}\sum_{k=0}^{M-1}x_{jk}e^{-2\pi i \left( \frac{jl}{N} + \frac{km}{M} \right) }
+$$
 
 
+This speed up allows us to 
 
 
 ```python
