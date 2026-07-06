@@ -719,7 +719,9 @@ x_{jk}=\sum_{j=0}^{N-1}\sum_{k=0}^{M-1} \widehat{x}_{lm}e^{2\pi i \left( \frac{j
 $$
 Using similar logic as earlier, we can see that 2D convolution is also related to Fourier transform.
 $$
+\begin{align}
 \widehat{x}_{lm}=\sum_{j=0}^{N-1}\sum_{k=0}^{M-1}x_{jk}e^{-2\pi i \left( \frac{jl}{N} + \frac{km}{M} \right) }
+\end{align}
 $$
 
 
