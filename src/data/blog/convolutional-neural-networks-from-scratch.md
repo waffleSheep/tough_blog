@@ -711,32 +711,36 @@ In the discrete case, point-wise multiplication of two lists that have undergone
 #### 2D Discrete Fourier Transform
 For 2D, the Discrete Fourier Transform is defined as
 $$
-\widehat{x}_{lm}=\sum_{j=0}^{N-1}\sum_{k=0}^{M-1}x_{jk}e^{-2\pi i \left( \frac{jl}{N} + \frac{km}{M} \right) }
+\widehat{x}_{lm}=\sum_{j=1}^{N}\sum_{k=1}^{M}x_{jk}e^{-2\pi i \left( \frac{(j-1)l}{N} + \frac{(k-1)m}{M} \right) }
 $$
 The inverse is defined as
 $$
-x_{jk}=\sum_{j=0}^{N-1}\sum_{k=0}^{M-1} \widehat{x}_{lm}e^{2\pi i \left( \frac{jl}{N} + \frac{km}{M} \right) }
+x_{jk}=\frac{1}{NM} \sum_{j=1}^{N}\sum_{k=1}^{M} \widehat{x}_{lm}e^{2\pi i \left( \frac{(j-1)l}{N} + \frac{(k-1)m}{M} \right) }
 $$
-Using similar logic as earlier, we can see that 2D convolution is also related to Fourier transform.
+Using similar logic as earlier, we can see that 2D convolution is also related to Fourier transform. We will take the convolution of a $N$ by $M$ matrix $\mathbf{X}$ and a $k_{1}$ by $k_{2}$ matrix $\mathbf{W}$ with $k_{1}\leq N$ and $k_{2}\leq M$. Define $\mathbf{Y}$ as $N$ by $M$ matrix. Where the submatrix $\mathbf{Y}_{i\leq k_{1},j \leq k_{2}}$ is the "flipped" version of $\mathbf{W}$ and the rest of the values are zeros. In this case, flip is not a transpose but rather a reverse in both dimensions, equivalent to like `matrix[::-1,::-1]` in Numpy or sending $i,j\rightarrow k_{1}-i+1,k_{2}-j+1$. Thus, the dimension of the matrix dont change or swap like a transpose. Using this, taking the pointwise multiplication of the Fourier Transform of $\mathbf{X}$ and $\mathbf{Y}$, we get
 $$
 \begin{align}
-\widehat{x}_{lm}=\sum_{j=0}^{N-1}\sum_{k=0}^{M-1}x_{jk}e^{-2\pi i \left( \frac{jl}{N} + \frac{km}{M} \right) }
+\widehat{x}_{l,m}\skew{1.2}\widehat{y}_{l,m}&=\sum_{j=1}^{N}\sum_{k=1}^{M}x_{j,k}e^{-2\pi i \left( \frac{(j-1)l}{N} + \frac{(k-1)m}{M} \right) }\sum_{p=1}^{N}\sum_{q=1}^{M}y_{p,q}e^{-2\pi i \left( \frac{(p-1)l}{N} + \frac{(q-1)m}{M} \right) } \\
+&=\sum_{j=1}^{N}\sum_{k=1}^{M}\sum_{p=1}^{N}\sum_{q=1}^{M}x_{j,k}y_{p,q}e^{-2\pi i \left( \frac{(j+p-1-1)l}{N} + \frac{(k+q-1-1)m}{M} \right) } \\
+&=\sum_{\tau=1}^{N}\sum_{\upsilon=1}^{M}\sum_{p=1}^{N}\sum_{q=1}^{M}x_{\tau-p+1,\upsilon-q+1}y_{p,q}e^{-2\pi i \left( \frac{(\tau-1)l}{N} + \frac{(\upsilon-1)m}{M} \right) } \\
+&=\sum_{\tau=1}^{N}\sum_{\upsilon=1}^{M} \left ( \sum_{p=1}^{N}\sum_{q=1}^{M}x_{\tau-p+1,\upsilon-q+1}y_{p,q} \right) e^{-2\pi i \left( \frac{(\tau-1)l}{N} + \frac{(\upsilon-1)m}{M} \right) } \\
+&=\sum_{\tau=1}^{N}\sum_{\upsilon=1}^{M} \left ( \sum_{p=1}^{k_{1}}\sum_{q=1}^{k_{2}}x_{\tau+k_{1}-p+1-1,\upsilon+k_{2}-q+1-1}y_{k_{1}-p+1,k_{2}-q+1} \right) e^{-2\pi i \left( \frac{(\tau-1)l}{N} + \frac{(\upsilon-1)m}{M} \right) } \\
+&=\sum_{\tau=1}^{N}\sum_{\upsilon=1}^{M} \left ( \sum_{r=1}^{k_{1}}\sum_{s=1}^{k_{2}}x_{\tau+r-1,\upsilon+s-1}w_{r,s} \right) e^{-2\pi i \left( \frac{(\tau-1)l}{N} + \frac{(\upsilon-1)m}{M} \right) } \\
+&=\sum_{\tau=1}^{N}\sum_{\upsilon=1}^{M} \left [ \mathbf{X} * \mathbf{W}\right]_{\tau,  \upsilon} e^{-2\pi i \left( \frac{(\tau-1)l}{N} + \frac{(\upsilon-1)m}{M} \right) } \\
+&=\left [ \widehat{\mathbf{X} * \mathbf{W}}\right]_{l,m}
 \end{align}
 $$
+This may look strange because of some of the negative indexing in the middle, but that is actually circular indexing, so if it is 0, it is actually the last value and so on. I will not elaborate further, this was very annoying (and some would say unnecessary) to type.
 
+This speed up allows us to speed convolution up from $O(C_{in}C_{out}N^{2}k^{2})$ to $O(C_{in}C_{out}N^{2}\log {N})$. Which is great, I guess!
 
-This speed up allows us to 
+### Convolution (Single Channel)
+
 
 
 ```python
 from numpy.fft import fft2, ifft2
 ```
-
-
-
-
-
-
 
 ### Convolution (Multi Channel)
 
